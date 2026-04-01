@@ -1012,6 +1012,43 @@
 
     function StudentDetailsView({ studentDetails, setStudentDetails, students, showToast }) {
       const fileInputRef = useRef(null);
+      const [sortConfig, setSortConfig] = useState({ key: 'number', direction: 'asc' });
+
+      const handleSort = (key) => {
+        let direction = 'desc';
+        if (sortConfig.key === key && sortConfig.direction === 'desc') {
+          direction = 'asc';
+        }
+        setSortConfig({ key, direction });
+      };
+
+      const resetSort = () => {
+        setSortConfig({ key: 'number', direction: 'asc' });
+      };
+
+      const sortedStudents = [...students].sort((a, b) => {
+        if (sortConfig.key === 'number') {
+          return sortConfig.direction === 'asc' ? a.number - b.number : b.number - a.number;
+        }
+        if (sortConfig.key === 'name') {
+           return sortConfig.direction === 'asc' ? a.kana.localeCompare(b.kana, 'ja') : b.kana.localeCompare(a.kana, 'ja');
+        }
+        
+        const dA = studentDetails[a.id] || {};
+        const dB = studentDetails[b.id] || {};
+        
+        const valA = dA[sortConfig.key] || '';
+        const valB = dB[sortConfig.key] || '';
+        
+        if (valA < valB) return sortConfig.direction === 'asc' ? -1 : 1;
+        if (valA > valB) return sortConfig.direction === 'asc' ? 1 : -1;
+        return 0;
+      });
+
+      const SortIcon = ({ columnKey }) => {
+        if (sortConfig.key !== columnKey) return <Icon name="ArrowUpDown" size={10} className="text-slate-300 ml-1 inline-block" />;
+        return sortConfig.direction === 'asc' ? <Icon name="ArrowUp" size={10} className="text-blue-500 ml-1 inline-block" /> : <Icon name="ArrowDown" size={10} className="text-blue-500 ml-1 inline-block" />;
+      };
 
       const handleDownloadCSV = () => {
         let csvContent = "出席番号,氏名,奨学生,部活,クラスの係・委員会,行事の係,コース（国語）,コース（数学）,コース（英語）,得意教科,苦手教科,将来の夢,行きたい大学,仲の良い友達,生徒の良いところ,改善したほうがいいところ,その他\n";
@@ -1089,8 +1126,14 @@
 
       return (
         <div className="max-w-full mx-auto animate-in fade-in duration-300">
-          <header className="mb-8"><h2 className="text-2xl font-bold text-slate-800">生徒詳細情報管理</h2>
-          <p className="text-slate-500 mt-2">部活や進路希望などの情報を一括でダウンロード・アップロードします。個別の編集は「生徒一覧」の個人画面からも可能です。</p>
+          <header className="mb-8 flex justify-between items-end flex-wrap gap-4">
+            <div>
+              <h2 className="text-2xl font-bold text-slate-800">生徒詳細情報管理</h2>
+              <p className="text-slate-500 mt-2">部活や進路希望などの情報を一括でダウンロード・アップロードします。各項目をタップして並び替えられます。</p>
+            </div>
+            <button onClick={resetSort} className="flex items-center gap-1 px-3 py-1.5 bg-slate-100 text-slate-600 rounded-lg text-xs font-bold hover:bg-slate-200 transition-colors">
+              <Icon name="RotateCcw" size={14} /> 元の順番に戻る
+            </button>
           </header>
           <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
             <div className="flex flex-wrap gap-6 items-end justify-between border-b border-slate-100 pb-6 mb-6">
@@ -1100,13 +1143,49 @@
                 <button onClick={() => fileInputRef.current?.click()} className="flex items-center gap-2 px-4 py-2.5 bg-indigo-50 border border-indigo-200 text-indigo-700 rounded-xl font-bold text-sm shadow-sm hover:bg-indigo-100 transition-colors"><Icon name="Upload" size={18} /> 入力したCSVをアップロード</button>
               </div>
             </div>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm text-left border-collapse min-w-[1600px]"><thead className="bg-slate-50 text-slate-600 font-bold border-y border-slate-200">
-                <tr><th className="p-3 text-center border-r w-12">番号</th><th className="p-3 border-r w-32">氏名</th><th className="p-3 text-center border-r">奨学生</th><th className="p-3">部活</th><th className="p-3">係・委員会</th><th className="p-3">行事係</th><th className="p-3">国語</th><th className="p-3">数学</th><th className="p-3">英語</th><th className="p-3">得意教科</th><th className="p-3">苦手教科</th><th className="p-3">将来の夢</th><th className="p-3">行きたい大学</th><th className="p-3">仲の良い友達</th><th className="p-3">生徒の良いところ</th><th className="p-3">改善したほうがいいところ</th><th className="p-3">その他</th></tr>
+            <div className="overflow-x-auto relative">
+              <table className="w-full text-sm text-left border-collapse min-w-[1600px]"><thead className="bg-slate-50 text-slate-600 font-bold border-y border-slate-200 select-none">
+                <tr>
+                  <th className="p-3 text-center border-r border-slate-200 w-12 cursor-pointer hover:bg-slate-200 sticky left-0 z-20 bg-slate-50" onClick={() => handleSort('number')}>番号<SortIcon columnKey="number" /></th>
+                  <th className="p-3 border-r border-slate-200 w-32 cursor-pointer hover:bg-slate-200 sticky left-[48px] z-20 bg-slate-50" onClick={() => handleSort('name')}>氏名<SortIcon columnKey="name" /></th>
+                  <th className="p-3 text-center border-r border-slate-200 cursor-pointer hover:bg-slate-100" onClick={() => handleSort('scholarship')}>奨学生<SortIcon columnKey="scholarship" /></th>
+                  <th className="p-3 cursor-pointer hover:bg-slate-100 whitespace-nowrap" onClick={() => handleSort('club')}>部活<SortIcon columnKey="club" /></th>
+                  <th className="p-3 cursor-pointer hover:bg-slate-100 whitespace-nowrap" onClick={() => handleSort('committee')}>係・委員会<SortIcon columnKey="committee" /></th>
+                  <th className="p-3 cursor-pointer hover:bg-slate-100 whitespace-nowrap" onClick={() => handleSort('event_role')}>行事係<SortIcon columnKey="event_role" /></th>
+                  <th className="p-3 cursor-pointer hover:bg-slate-100 whitespace-nowrap" onClick={() => handleSort('course_kokugo')}>国語<SortIcon columnKey="course_kokugo" /></th>
+                  <th className="p-3 cursor-pointer hover:bg-slate-100 whitespace-nowrap" onClick={() => handleSort('course_sugaku')}>数学<SortIcon columnKey="course_sugaku" /></th>
+                  <th className="p-3 cursor-pointer hover:bg-slate-100 whitespace-nowrap" onClick={() => handleSort('course_eigo')}>英語<SortIcon columnKey="course_eigo" /></th>
+                  <th className="p-3 cursor-pointer hover:bg-slate-100 whitespace-nowrap" onClick={() => handleSort('strong_subject')}>得意教科<SortIcon columnKey="strong_subject" /></th>
+                  <th className="p-3 cursor-pointer hover:bg-slate-100 whitespace-nowrap" onClick={() => handleSort('weak_subject')}>苦手教科<SortIcon columnKey="weak_subject" /></th>
+                  <th className="p-3 cursor-pointer hover:bg-slate-100 whitespace-nowrap" onClick={() => handleSort('dream')}>将来の夢<SortIcon columnKey="dream" /></th>
+                  <th className="p-3 cursor-pointer hover:bg-slate-100 whitespace-nowrap" onClick={() => handleSort('university')}>行きたい大学<SortIcon columnKey="university" /></th>
+                  <th className="p-3 cursor-pointer hover:bg-slate-100 whitespace-nowrap" onClick={() => handleSort('friends')}>仲の良い友達<SortIcon columnKey="friends" /></th>
+                  <th className="p-3 cursor-pointer hover:bg-slate-100 whitespace-nowrap" onClick={() => handleSort('good_points')}>生徒の良いところ<SortIcon columnKey="good_points" /></th>
+                  <th className="p-3 cursor-pointer hover:bg-slate-100 whitespace-nowrap" onClick={() => handleSort('areas_to_improve')}>改善したほうがいいところ<SortIcon columnKey="areas_to_improve" /></th>
+                  <th className="p-3 cursor-pointer hover:bg-slate-100 whitespace-nowrap" onClick={() => handleSort('others')}>その他<SortIcon columnKey="others" /></th>
+                </tr>
               </thead><tbody className="divide-y divide-slate-100">
-                {students.map(student => {
+                {sortedStudents.map(student => {
                   const d = studentDetails[student.id] || {};
-                  return <tr key={student.id} className="hover:bg-slate-50 transition-colors"><td className="p-3 text-center border-r font-bold text-slate-500">{student.number}</td><td className="p-3 border-r font-bold text-slate-800">{student.name}</td><td className="p-3 text-center border-r font-bold text-amber-600">{d.scholarship||'-'}</td><td className="p-3">{d.club||'-'}</td><td className="p-3">{d.committee||'-'}</td><td className="p-3">{d.event_role||'-'}</td><td className="p-3">{d.course_kokugo||'-'}</td><td className="p-3">{d.course_sugaku||'-'}</td><td className="p-3">{d.course_eigo||'-'}</td><td className="p-3">{d.strong_subject||'-'}</td><td className="p-3">{d.weak_subject||'-'}</td><td className="p-3">{d.dream||'-'}</td><td className="p-3">{d.university||'-'}</td><td className="p-3">{d.friends||'-'}</td><td className="p-3">{d.good_points||'-'}</td><td className="p-3">{d.areas_to_improve||'-'}</td><td className="p-3">{d.others||'-'}</td></tr>
+                  return <tr key={student.id} className="group hover:bg-slate-50 transition-colors">
+                    <td className="p-3 text-center border-r border-slate-200 font-bold text-slate-500 sticky left-0 z-10 bg-white group-hover:bg-slate-50">{student.number}</td>
+                    <td className="p-3 border-r border-slate-200 font-bold text-slate-800 sticky left-[48px] z-10 bg-white group-hover:bg-slate-50">{student.name}</td>
+                    <td className="p-3 text-center border-r border-slate-200 font-bold text-amber-600">{d.scholarship||'-'}</td>
+                    <td className="p-3 truncate">{d.club||'-'}</td>
+                    <td className="p-3 truncate">{d.committee||'-'}</td>
+                    <td className="p-3 truncate">{d.event_role||'-'}</td>
+                    <td className="p-3 truncate">{d.course_kokugo||'-'}</td>
+                    <td className="p-3 truncate">{d.course_sugaku||'-'}</td>
+                    <td className="p-3 truncate">{d.course_eigo||'-'}</td>
+                    <td className="p-3 truncate">{d.strong_subject||'-'}</td>
+                    <td className="p-3 truncate">{d.weak_subject||'-'}</td>
+                    <td className="p-3 truncate">{d.dream||'-'}</td>
+                    <td className="p-3 truncate">{d.university||'-'}</td>
+                    <td className="p-3 truncate">{d.friends||'-'}</td>
+                    <td className="p-3 truncate">{d.good_points||'-'}</td>
+                    <td className="p-3 truncate">{d.areas_to_improve||'-'}</td>
+                    <td className="p-3 truncate">{d.others||'-'}</td>
+                  </tr>
                 })}
               </tbody></table>
             </div>
@@ -1225,18 +1304,18 @@
                 <button onClick={() => fileInputRef.current?.click()} className="flex items-center gap-2 px-4 py-2.5 bg-blue-50 border border-blue-200 text-blue-700 rounded-xl font-bold text-sm shadow-sm"><Icon name="Upload" size={18} /> CSVアップロード</button>
               </div>
             </div>
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto relative">
               <table className="w-full text-sm text-left border-collapse min-w-[800px]"><thead className="bg-slate-50 text-slate-600 font-bold border-y border-slate-200 select-none">
                 <tr>
-                  <th className="p-3 text-center border-r w-12 cursor-pointer hover:bg-slate-100" onClick={() => handleSort('number')}>番号<SortIcon columnKey="number" /></th>
-                  <th className="p-3 border-r w-32 cursor-pointer hover:bg-slate-100" onClick={() => handleSort('name')}>氏名<SortIcon columnKey="name" /></th>
+                  <th className="p-3 text-center border-r border-slate-200 w-12 cursor-pointer hover:bg-slate-200 sticky left-0 z-20 bg-slate-50" onClick={() => handleSort('number')}>番号<SortIcon columnKey="number" /></th>
+                  <th className="p-3 border-r border-slate-200 w-32 cursor-pointer hover:bg-slate-200 sticky left-[48px] z-20 bg-slate-50" onClick={() => handleSort('name')}>氏名<SortIcon columnKey="name" /></th>
                   <th className="p-3 text-center cursor-pointer hover:bg-slate-100" onClick={() => handleSort('kokugo')}>国語<SortIcon columnKey="kokugo" /></th>
                   <th className="p-3 text-center cursor-pointer hover:bg-slate-100" onClick={() => handleSort('shakai')}>社会<SortIcon columnKey="shakai" /></th>
                   <th className="p-3 text-center cursor-pointer hover:bg-slate-100" onClick={() => handleSort('sugaku')}>数学<SortIcon columnKey="sugaku" /></th>
                   <th className="p-3 text-center cursor-pointer hover:bg-slate-100" onClick={() => handleSort('rika')}>理科<SortIcon columnKey="rika" /></th>
-                  <th className="p-3 text-center border-r cursor-pointer hover:bg-slate-100" onClick={() => handleSort('eigo')}>外国語<SortIcon columnKey="eigo" /></th>
+                  <th className="p-3 text-center border-r border-slate-200 cursor-pointer hover:bg-slate-100" onClick={() => handleSort('eigo')}>外国語<SortIcon columnKey="eigo" /></th>
                   <th className="p-3 text-center bg-blue-50/50 cursor-pointer hover:bg-blue-100" onClick={() => handleSort('total')}>総点<SortIcon columnKey="total" /></th>
-                  <th className="p-3 text-center border-r cursor-pointer hover:bg-slate-100" onClick={() => handleSort('average')}>平均点<SortIcon columnKey="average" /></th>
+                  <th className="p-3 text-center border-r border-slate-200 cursor-pointer hover:bg-slate-100" onClick={() => handleSort('average')}>平均点<SortIcon columnKey="average" /></th>
                   <th className="p-3 text-center cursor-pointer hover:bg-slate-100" onClick={() => handleSort('class_rank')}>学級席次<SortIcon columnKey="class_rank" /></th>
                   <th className="p-3 text-center cursor-pointer hover:bg-slate-100" onClick={() => handleSort('grade_rank')}>学年席次<SortIcon columnKey="grade_rank" /></th>
                 </tr>
@@ -1244,7 +1323,10 @@
                 {sortedStudents.map(student => {
                   const g = grades[selectedTerm]?.[student.id];
                   const hasData = !!g && Object.values(g).some(v => v !== '');
-                  return <tr key={student.id} className="hover:bg-slate-50"><td className="p-3 text-center border-r font-bold text-slate-500">{student.number}</td><td className="p-3 border-r font-bold">{student.name}</td><td className={`p-3 text-center ${hasData?'text-slate-800':'text-slate-300'}`}>{g?.kokugo||'-'}</td><td className={`p-3 text-center ${hasData?'text-slate-800':'text-slate-300'}`}>{g?.shakai||'-'}</td><td className={`p-3 text-center ${hasData?'text-slate-800':'text-slate-300'}`}>{g?.sugaku||'-'}</td><td className={`p-3 text-center ${hasData?'text-slate-800':'text-slate-300'}`}>{g?.rika||'-'}</td><td className={`p-3 text-center border-r ${hasData?'text-slate-800':'text-slate-300'}`}>{g?.eigo||'-'}</td><td className={`p-3 text-center font-bold bg-blue-50/30 ${hasData?'text-blue-800':'text-slate-300'}`}>{g?.total||'-'}</td><td className={`p-3 text-center border-r ${hasData?'text-slate-800':'text-slate-300'}`}>{g?.average||'-'}</td><td className={`p-3 text-center ${hasData?'text-slate-800':'text-slate-300'}`}>{g?.class_rank||'-'}</td><td className={`p-3 text-center ${hasData?'text-slate-800':'text-slate-300'}`}>{g?.grade_rank||'-'}</td></tr>
+                  return <tr key={student.id} className="group hover:bg-slate-50 transition-colors">
+                    <td className="p-3 text-center border-r border-slate-200 font-bold text-slate-500 sticky left-0 z-10 bg-white group-hover:bg-slate-50">{student.number}</td>
+                    <td className="p-3 border-r border-slate-200 font-bold text-slate-800 sticky left-[48px] z-10 bg-white group-hover:bg-slate-50">{student.name}</td>
+                    <td className={`p-3 text-center ${hasData?'text-slate-800':'text-slate-300'}`}>{g?.kokugo||'-'}</td><td className={`p-3 text-center ${hasData?'text-slate-800':'text-slate-300'}`}>{g?.shakai||'-'}</td><td className={`p-3 text-center ${hasData?'text-slate-800':'text-slate-300'}`}>{g?.sugaku||'-'}</td><td className={`p-3 text-center ${hasData?'text-slate-800':'text-slate-300'}`}>{g?.rika||'-'}</td><td className={`p-3 text-center border-r border-slate-200 ${hasData?'text-slate-800':'text-slate-300'}`}>{g?.eigo||'-'}</td><td className={`p-3 text-center font-bold bg-blue-50/30 ${hasData?'text-blue-800':'text-slate-300'}`}>{g?.total||'-'}</td><td className={`p-3 text-center border-r border-slate-200 ${hasData?'text-slate-800':'text-slate-300'}`}>{g?.average||'-'}</td><td className={`p-3 text-center ${hasData?'text-slate-800':'text-slate-300'}`}>{g?.class_rank||'-'}</td><td className={`p-3 text-center ${hasData?'text-slate-800':'text-slate-300'}`}>{g?.grade_rank||'-'}</td></tr>
                 })}
               </tbody></table>
             </div>
@@ -1363,23 +1445,23 @@
                 <button onClick={() => fileInputRef.current?.click()} className="flex items-center gap-2 px-4 py-2.5 bg-blue-50 border border-blue-200 text-blue-700 rounded-xl font-bold text-sm shadow-sm"><Icon name="Upload" size={18} /> CSVアップロード</button>
               </div>
             </div>
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto relative">
               <table className="w-full text-sm text-left border-collapse min-w-[800px]"><thead className="bg-slate-50 text-slate-600 font-bold border-y border-slate-200 select-none">
                 <tr>
-                  <th className="p-3 text-center border-r w-12 cursor-pointer hover:bg-slate-100" rowSpan="2" onClick={() => handleSort('number')}>番号<SortIcon columnKey="number" /></th>
-                  <th className="p-3 border-r w-32 cursor-pointer hover:bg-slate-100" rowSpan="2" onClick={() => handleSort('name')}>氏名<SortIcon columnKey="name" /></th>
-                  <th className="p-2 text-center border-r bg-blue-50/50" colSpan="2">国数英 総合</th>
-                  <th className="p-2 text-center border-r" colSpan="2">国語</th>
-                  <th className="p-2 text-center border-r" colSpan="2">数学</th>
+                  <th className="p-3 text-center border-r border-slate-200 w-12 cursor-pointer hover:bg-slate-200 sticky left-0 z-20 bg-slate-50" rowSpan="2" onClick={() => handleSort('number')}>番号<SortIcon columnKey="number" /></th>
+                  <th className="p-3 border-r border-slate-200 w-32 cursor-pointer hover:bg-slate-200 sticky left-[48px] z-20 bg-slate-50" rowSpan="2" onClick={() => handleSort('name')}>氏名<SortIcon columnKey="name" /></th>
+                  <th className="p-2 text-center border-r border-slate-200 bg-blue-50/50" colSpan="2">国数英 総合</th>
+                  <th className="p-2 text-center border-r border-slate-200" colSpan="2">国語</th>
+                  <th className="p-2 text-center border-r border-slate-200" colSpan="2">数学</th>
                   <th className="p-2 text-center" colSpan="2">英語</th>
                 </tr>
                 <tr>
                   <th className="p-2 text-center text-xs bg-blue-50/50 cursor-pointer hover:bg-blue-100" onClick={() => handleSort('total_score')}>得点<SortIcon columnKey="total_score" /></th>
-                  <th className="p-2 text-center text-xs border-r bg-blue-50/50 text-blue-700 cursor-pointer hover:bg-blue-100" onClick={() => handleSort('total_dev')}>偏差値<SortIcon columnKey="total_dev" /></th>
+                  <th className="p-2 text-center text-xs border-r border-slate-200 bg-blue-50/50 text-blue-700 cursor-pointer hover:bg-blue-100" onClick={() => handleSort('total_dev')}>偏差値<SortIcon columnKey="total_dev" /></th>
                   <th className="p-2 text-center text-xs cursor-pointer hover:bg-slate-100" onClick={() => handleSort('kokugo_score')}>得点<SortIcon columnKey="kokugo_score" /></th>
-                  <th className="p-2 text-center text-xs border-r cursor-pointer hover:bg-slate-100" onClick={() => handleSort('kokugo_dev')}>偏差値<SortIcon columnKey="kokugo_dev" /></th>
+                  <th className="p-2 text-center text-xs border-r border-slate-200 cursor-pointer hover:bg-slate-100" onClick={() => handleSort('kokugo_dev')}>偏差値<SortIcon columnKey="kokugo_dev" /></th>
                   <th className="p-2 text-center text-xs cursor-pointer hover:bg-slate-100" onClick={() => handleSort('sugaku_score')}>得点<SortIcon columnKey="sugaku_score" /></th>
-                  <th className="p-2 text-center text-xs border-r cursor-pointer hover:bg-slate-100" onClick={() => handleSort('sugaku_dev')}>偏差値<SortIcon columnKey="sugaku_dev" /></th>
+                  <th className="p-2 text-center text-xs border-r border-slate-200 cursor-pointer hover:bg-slate-100" onClick={() => handleSort('sugaku_dev')}>偏差値<SortIcon columnKey="sugaku_dev" /></th>
                   <th className="p-2 text-center text-xs cursor-pointer hover:bg-slate-100" onClick={() => handleSort('eigo_score')}>得点<SortIcon columnKey="eigo_score" /></th>
                   <th className="p-2 text-center text-xs cursor-pointer hover:bg-slate-100" onClick={() => handleSort('eigo_dev')}>偏差値<SortIcon columnKey="eigo_dev" /></th>
                 </tr>
@@ -1387,7 +1469,10 @@
                 {sortedStudents.map(student => {
                   const mg = mockGrades[selectedMock]?.[student.id];
                   const hasData = !!mg && Object.values(mg).some(v => v !== '');
-                  return <tr key={student.id} className="hover:bg-slate-50"><td className="p-3 text-center border-r font-bold text-slate-500">{student.number}</td><td className="p-3 border-r font-bold">{student.name}</td><td className={`p-2 text-center bg-blue-50/30 font-bold ${hasData?'text-slate-800':'text-slate-300'}`}>{mg?.total_score||'-'}</td><td className={`p-2 text-center border-r bg-blue-50/30 font-bold ${hasData?'text-blue-700':'text-slate-300'}`}>{mg?.total_dev||'-'}</td><td className={`p-2 text-center ${hasData?'text-slate-800':'text-slate-300'}`}>{mg?.kokugo_score||'-'}</td><td className={`p-2 text-center border-r ${hasData?'text-slate-600':'text-slate-300'}`}>{mg?.kokugo_dev||'-'}</td><td className={`p-2 text-center ${hasData?'text-slate-800':'text-slate-300'}`}>{mg?.sugaku_score||'-'}</td><td className={`p-2 text-center border-r ${hasData?'text-slate-600':'text-slate-300'}`}>{mg?.sugaku_dev||'-'}</td><td className={`p-2 text-center ${hasData?'text-slate-800':'text-slate-300'}`}>{mg?.eigo_score||'-'}</td><td className={`p-2 text-center ${hasData?'text-slate-600':'text-slate-300'}`}>{mg?.eigo_dev||'-'}</td></tr>
+                  return <tr key={student.id} className="group hover:bg-slate-50 transition-colors">
+                    <td className="p-3 text-center border-r border-slate-200 font-bold text-slate-500 sticky left-0 z-10 bg-white group-hover:bg-slate-50">{student.number}</td>
+                    <td className="p-3 border-r border-slate-200 font-bold text-slate-800 sticky left-[48px] z-10 bg-white group-hover:bg-slate-50">{student.name}</td>
+                    <td className={`p-2 text-center bg-blue-50/30 font-bold ${hasData?'text-slate-800':'text-slate-300'}`}>{mg?.total_score||'-'}</td><td className={`p-2 text-center border-r border-slate-200 bg-blue-50/30 font-bold ${hasData?'text-blue-700':'text-slate-300'}`}>{mg?.total_dev||'-'}</td><td className={`p-2 text-center ${hasData?'text-slate-800':'text-slate-300'}`}>{mg?.kokugo_score||'-'}</td><td className={`p-2 text-center border-r border-slate-200 ${hasData?'text-slate-600':'text-slate-300'}`}>{mg?.kokugo_dev||'-'}</td><td className={`p-2 text-center ${hasData?'text-slate-800':'text-slate-300'}`}>{mg?.sugaku_score||'-'}</td><td className={`p-2 text-center border-r border-slate-200 ${hasData?'text-slate-600':'text-slate-300'}`}>{mg?.sugaku_dev||'-'}</td><td className={`p-2 text-center ${hasData?'text-slate-800':'text-slate-300'}`}>{mg?.eigo_score||'-'}</td><td className={`p-2 text-center ${hasData?'text-slate-600':'text-slate-300'}`}>{mg?.eigo_dev||'-'}</td></tr>
                 })}
               </tbody></table>
             </div>
