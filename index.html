@@ -12,21 +12,14 @@
   <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
   
-  <!-- Babel (for compiling JSX in the browser) -->
+  <!-- Babel -->
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
   <style>
     /* 印刷時のスタイル調整（1ページに全情報を収めるための高密度レイアウト） */
     @media print {
-      @page { margin: 10mm; } /* 用紙の余白を最小化 */
-      
-      body { 
-        -webkit-print-color-adjust: exact; 
-        print-color-adjust: exact; 
-        font-size: 10px; 
-        line-height: 1.3; 
-      }
-      
+      @page { margin: 10mm; }
+      body { -webkit-print-color-adjust: exact; print-color-adjust: exact; font-size: 10px; line-height: 1.3; }
       .print\:hidden { display: none !important; }
       .print\:block { display: block !important; }
       .print\:p-0 { padding: 0 !important; }
@@ -34,36 +27,21 @@
       .print\:border-b-2 { border-bottom-width: 1px !important; border-color: #cbd5e1 !important; }
       .print\:rounded-none { border-radius: 0 !important; }
       .break-after-page { page-break-after: always; break-after: page; }
-      
-      /* 全体的な余白・パディングの圧縮 */
       .mb-8 { margin-bottom: 10px !important; }
       .mb-6 { margin-bottom: 6px !important; }
       .mb-4 { margin-bottom: 4px !important; }
       .p-8, .p-6 { padding: 6px 0 !important; border: none !important; box-shadow: none !important; }
       .pb-3 { padding-bottom: 2px !important; }
-      
-      /* 見出しの圧縮 */
       h2.text-4xl { font-size: 18px !important; margin-bottom: 2px !important; }
-      h3.text-lg, h3.text-xl { 
-        font-size: 12px !important; 
-        margin-bottom: 4px !important; 
-        padding-bottom: 2px !important; 
-        border-bottom: 1px solid #cbd5e1 !important; 
-      }
-      
-      /* 生徒詳細情報（グリッド）の圧縮：2列を4列にして縦幅を節約 */
+      h3.text-lg, h3.text-xl { font-size: 12px !important; margin-bottom: 4px !important; padding-bottom: 2px !important; border-bottom: 1px solid #cbd5e1 !important; }
       .md\:grid-cols-2 { grid-template-columns: repeat(4, minmax(0, 1fr)) !important; }
       .gap-y-4 { row-gap: 2px !important; }
       .gap-x-8 { column-gap: 8px !important; }
       .min-h-\[28px\] { min-height: 14px !important; font-size: 9px !important; padding: 2px 4px !important; }
       .text-xs { font-size: 8px !important; }
-      
-      /* テーブル（成績一覧）の圧縮 */
       table { font-size: 9px !important; width: 100% !important; }
       th, td { padding: 3px 2px !important; border: 1px solid #e2e8f0 !important; }
-      .overflow-x-auto { overflow: visible !important; } /* スクロールバー非表示対策 */
-      
-      /* これまでの記録（タイムライン）の圧縮 */
+      .overflow-x-auto { overflow: visible !important; }
       .md\:flex { display: flex !important; }
       .gap-6 { gap: 8px !important; }
       .md\:w-\[100px\] { width: 50px !important; font-size: 9px !important; flex-shrink: 0; }
@@ -76,7 +54,7 @@
   <div id="root"></div>
 
   <script type="text/babel" data-type="module">
-    const { useState, useEffect, useRef } = React;
+    const { useState, useEffect, useRef, useCallback } = React;
 
     // === SVG Icons Component ===
     const Icon = ({ name, size = 24, className = "" }) => {
@@ -106,7 +84,8 @@
         CloudDownload: <><path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/><path d="M12 12v9"/><path d="m8 17 4 4 4-4"/></>,
         Settings: <><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></>,
         ChevronDown: <><polyline points="6 9 12 15 18 9"/></>,
-        Menu: <><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/></>
+        Menu: <><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/></>,
+        Loader2: <><path d="M21 12a9 9 0 1 1-6.219-8.56"/></>
       };
       return (
         <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
@@ -195,6 +174,10 @@
       const [mockGrades, setMockGrades] = useState({});
       const [studentDetails, setStudentDetails] = useState({});
       
+      const [hasInitialLoaded, setHasInitialLoaded] = useState(false);
+      const isRestoringRef = useRef(false); // 同期によるデータ書き換え中フラグ
+      const [saveStatus, setSaveStatus] = useState('idle'); // 'idle' | 'saving' | 'saved'
+
       // Custom Firebase States
       const [customFirebaseConfig, setCustomFirebaseConfig] = useState(() => localStorage.getItem('customFirebaseConfig') || '');
       const [configInput, setConfigInput] = useState(customFirebaseConfig ? JSON.parse(customFirebaseConfig) : '');
@@ -202,17 +185,13 @@
 
       // Firebase Sync States (localStorageで記憶する)
       const [syncId, setSyncId] = useState(() => localStorage.getItem('classNoteSyncId') || '');
-      const [isSyncing, setIsSyncing] = useState(false);
       const [user, setUser] = useState(null);
 
-      // Sync IDを常にローカルストレージに保存
       useEffect(() => {
         localStorage.setItem('classNoteSyncId', syncId);
       }, [syncId]);
 
-      // クラウドが同期可能な状態か判定
       const isCloudReady = user && syncId.trim() !== '';
-
       const fileBackupRef = useRef(null);
 
       // --- Firebase Config Parser ---
@@ -242,7 +221,6 @@
           setTimeout(() => window.location.reload(), 1500);
           return;
         }
-
         const parsed = typeof configInput === 'string' ? parseFirebaseConfig(configInput) : configInput;
         if (parsed && parsed.apiKey && parsed.projectId) {
           const stringified = JSON.stringify(parsed);
@@ -263,14 +241,8 @@
             const authMod = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js");
             const dbMod = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js");
             
-            let configToUse = null;
-
-            if (customFirebaseConfig) {
-              configToUse = JSON.parse(customFirebaseConfig);
-            } else {
-              configToUse = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
-            }
-
+            let configToUse = customFirebaseConfig ? JSON.parse(customFirebaseConfig) : 
+                              (typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null);
             if (!configToUse) return;
 
             const app = appMod.getApps().length === 0 ? appMod.initializeApp(configToUse) : appMod.getApp();
@@ -281,6 +253,7 @@
             window.firebaseDoc = dbMod.doc;
             window.firebaseSetDoc = dbMod.setDoc;
             window.firebaseGetDoc = dbMod.getDoc;
+            window.firebaseOnSnapshot = dbMod.onSnapshot;
 
             if (customFirebaseConfig) {
                await authMod.signInAnonymously(auth);
@@ -291,7 +264,6 @@
                  await authMod.signInAnonymously(auth);
                }
             }
-
             authMod.onAuthStateChanged(auth, (u) => setUser(u));
             setFirebaseInitError(null);
           } catch (error) {
@@ -302,69 +274,111 @@
         initFirebaseAndAuth();
       }, [customFirebaseConfig]);
 
-      // --- 自動復元処理 (初回ロード時のみ) ---
-      const initialPullRef = useRef(false);
+      const showToast = useCallback((message) => {
+        setToast(message);
+        setTimeout(() => setToast(null), 4000);
+      }, []);
+
+      // === 安全な同期ロジック (Unbreakable Sync) ===
+      
+      // ローカルデータを一元管理するRef (Snapshot時の比較・自動保存用)
+      const localDataRef = useRef({ records, events, goals, grades, mockGrades, studentDetails });
       useEffect(() => {
-        if (user && syncId.trim() && window.firebaseDb && !initialPullRef.current) {
-          initialPullRef.current = true;
-          // 自動でPullを実行
-          const autoPull = async () => {
-            try {
-              const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-              const docRef = window.firebaseDoc(window.firebaseDb, 'artifacts', appId, 'public', 'data', 'class_notes', syncId.trim());
-              const snap = await window.firebaseGetDoc(docRef);
-              if (snap.exists()) {
-                const data = snap.data();
+        localDataRef.current = { records, events, goals, grades, mockGrades, studentDetails };
+      }, [records, events, goals, grades, mockGrades, studentDetails]);
+
+      // 1. リアルタイム同期 (Cloud -> Local)
+      useEffect(() => {
+        if (!user || !syncId.trim() || !window.firebaseDb || !window.firebaseOnSnapshot) return;
+        
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const docRef = window.firebaseDoc(window.firebaseDb, 'artifacts', appId, 'public', 'data', 'class_notes', syncId.trim());
+        
+        const unsubscribe = window.firebaseOnSnapshot(docRef, (snap) => {
+          if (snap.exists()) {
+            // 他の端末からの変更、または初回読み込み時のみ適用 (自分が入力中のエコーバックは無視)
+            if (!snap.metadata.hasPendingWrites) {
+              const data = snap.data();
+              // 無限ループ防止のため、内容が違う場合のみ反映
+              const cloudDataStr = JSON.stringify({
+                records: data.records || {}, events: data.events || [], goals: data.goals || {}, 
+                grades: data.grades || {}, mockGrades: data.mockGrades || {}, studentDetails: data.studentDetails || {}
+              });
+              const localDataStr = JSON.stringify(localDataRef.current);
+              
+              if (cloudDataStr !== localDataStr) {
+                isRestoringRef.current = true; // この反映によって自動保存が走らないようにロック
                 if(data.records) setRecords(data.records);
                 if(data.events) setEvents(data.events);
                 if(data.goals) setGoals(data.goals);
                 if(data.grades) setGrades(data.grades);
                 if(data.mockGrades) setMockGrades(data.mockGrades);
                 if(data.studentDetails) setStudentDetails(data.studentDetails);
-                showToast("クラウドから最新のデータを自動復元しました。");
+                
+                // Stateの反映が終わるまでロックを維持
+                setTimeout(() => { isRestoringRef.current = false; }, 500); 
               }
-            } catch (e) {
-              console.error("Auto pull failed", e);
             }
-          };
-          autoPull();
-        }
-      }, [user]);
+          }
+          setHasInitialLoaded(true); // 初回ロード完了フラグ
+        }, (err) => {
+          console.error("同期エラー:", err);
+          setHasInitialLoaded(true);
+        });
 
-      const showToast = (message) => {
-        setToast(message);
-        setTimeout(() => setToast(null), 4000);
-      };
+        return () => {
+          unsubscribe();
+          setHasInitialLoaded(false);
+        };
+      }, [user, syncId, customFirebaseConfig]);
 
-      // --- Firebase Sync Handlers ---
+      // 2. 自動保存 (Local -> Cloud)
+      useEffect(() => {
+        // クラウドの初回読み込みが終わっていない、または同期によるデータ書き換え中の場合は保存しない
+        if (!isCloudReady || !hasInitialLoaded || isRestoringRef.current) return;
+        
+        setSaveStatus('saving');
+        const timer = setTimeout(async () => {
+          try {
+            const dataToSave = localDataRef.current;
+            const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+            const docRef = window.firebaseDoc(window.firebaseDb, 'artifacts', appId, 'public', 'data', 'class_notes', syncId.trim());
+            // merge: true を使って他端末のデータを壊しにくくする
+            await window.firebaseSetDoc(docRef, dataToSave, { merge: true });
+            setSaveStatus('saved');
+            setTimeout(() => setSaveStatus('idle'), 2000);
+          } catch (e) {
+            console.error("Auto Save Error", e);
+            setSaveStatus('idle');
+          }
+        }, 1500); // 1.5秒間入力がなければ保存
+
+        return () => clearTimeout(timer);
+      }, [records, events, goals, grades, mockGrades, studentDetails, isCloudReady, hasInitialLoaded]);
+
+
+      // === Handlers ===
       const handlePushCloud = async () => {
-        if (!user || !syncId.trim() || !window.firebaseDb) {
-          return showToast("エラー: クラウド設定を確認し、Sync IDを入力してください。");
-        }
-        setIsSyncing(true);
+        if (!isCloudReady) return showToast("エラー: Sync IDを入力してください。");
         try {
-          const data = { records, events, goals, grades, mockGrades, studentDetails };
+          const data = localDataRef.current;
           const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
           const docRef = window.firebaseDoc(window.firebaseDb, 'artifacts', appId, 'public', 'data', 'class_notes', syncId.trim());
-          await window.firebaseSetDoc(docRef, data);
-          showToast("クラウドに保存しました！別の端末で同じSync IDを使って復元できます。");
+          await window.firebaseSetDoc(docRef, data, { merge: true });
+          showToast("クラウドに手動で保存しました！");
         } catch (e) {
-          console.error(e);
-          showToast("クラウド保存に失敗しました。データベースのセキュリティルールを確認してください。");
+          showToast("保存に失敗しました。");
         }
-        setIsSyncing(false);
       };
 
       const handlePullCloud = async () => {
-        if (!user || !syncId.trim() || !window.firebaseDb) {
-          return showToast("エラー: クラウド設定を確認し、Sync IDを入力してください。");
-        }
-        setIsSyncing(true);
+        if (!isCloudReady) return showToast("エラー: Sync IDを入力してください。");
         try {
           const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
           const docRef = window.firebaseDoc(window.firebaseDb, 'artifacts', appId, 'public', 'data', 'class_notes', syncId.trim());
           const snap = await window.firebaseGetDoc(docRef);
           if (snap.exists()) {
+            isRestoringRef.current = true;
             const data = snap.data();
             if(data.records) setRecords(data.records);
             if(data.events) setEvents(data.events);
@@ -372,18 +386,16 @@
             if(data.grades) setGrades(data.grades);
             if(data.mockGrades) setMockGrades(data.mockGrades);
             if(data.studentDetails) setStudentDetails(data.studentDetails);
-            showToast("クラウドからデータを手動で復元しました！");
+            setTimeout(() => { isRestoringRef.current = false; }, 500);
+            showToast("クラウドから最新のデータを手動で復元しました！");
           } else {
             showToast("指定されたSync IDのデータが見つかりません。");
           }
         } catch (e) {
-          console.error(e);
-          showToast("クラウドからの読み込みに失敗しました。データベースのセキュリティルールを確認してください。");
+          showToast("読み込みに失敗しました。");
         }
-        setIsSyncing(false);
       };
 
-      // Handlers
       const handleAddRecord = (studentId, record) => {
         setRecords(prev => {
           const studentRecords = prev[studentId] || [];
@@ -403,7 +415,6 @@
         setGoals(prev => ({ ...prev, [field]: value }));
       };
 
-      // バックアップデータの保存・読み込み
       const handleExportBackup = () => {
         const data = { records, events, goals, grades, mockGrades, studentDetails };
         const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
@@ -422,19 +433,21 @@
         reader.onload = (event) => {
           try {
             const data = JSON.parse(event.target.result);
+            isRestoringRef.current = true;
             if(data.records) setRecords(data.records);
             if(data.events) setEvents(data.events);
             if(data.goals) setGoals(data.goals);
             if(data.grades) setGrades(data.grades);
             if(data.mockGrades) setMockGrades(data.mockGrades);
             if(data.studentDetails) setStudentDetails(data.studentDetails);
+            setTimeout(() => { isRestoringRef.current = false; }, 500);
             showToast('JSONファイルからデータを復元しました。');
           } catch(err) {
             showToast('ファイルの読み込みに失敗しました。');
           }
         };
         reader.readAsText(file);
-        e.target.value = null; // reset
+        e.target.value = null;
       };
 
       // 印刷処理
@@ -483,17 +496,23 @@
                 <div className="flex items-center gap-3 mt-2">
                   {/* バージョン表示 */}
                   <span className="text-[10px] font-mono bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded border border-slate-200">
-                    ver. 1.2.0
+                    v1.4.0
                   </span>
                   {/* 同期ステータスランプ */}
                   {isCloudReady ? (
-                    <span className="flex items-center gap-1.5 text-[10px] text-emerald-600 font-bold bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-100">
-                      <span className="relative flex h-2 w-2">
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                        <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                    saveStatus === 'saving' ? (
+                      <span className="flex items-center gap-1.5 text-[10px] text-amber-600 font-bold bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">
+                        <Icon name="Loader2" size={10} className="animate-spin" /> 保存中...
                       </span>
-                      同期ON
-                    </span>
+                    ) : (
+                      <span className="flex items-center gap-1.5 text-[10px] text-emerald-600 font-bold bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-100">
+                        <span className="relative flex h-2 w-2">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                          <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                        </span>
+                        自動同期ON
+                      </span>
+                    )
                   ) : (
                     <span className="flex items-center gap-1.5 text-[10px] text-slate-400 font-bold bg-slate-50 px-1.5 py-0.5 rounded border border-slate-200">
                       <span className="relative inline-flex rounded-full h-2 w-2 bg-slate-300"></span>
@@ -542,14 +561,14 @@
                       onClick={handleSaveFirebaseConfig} 
                       className="w-full py-1.5 bg-slate-800 text-white rounded text-[10px] font-bold hover:bg-slate-700 transition-colors"
                     >
-                      {configInput && typeof configInput === 'string' && configInput.trim() ? "設定を保存して再読み込み" : "設定をクリアして再読み込み"}
+                      {configInput && typeof configInput === 'string' && configInput.trim() ? "設定を保存して再読込" : "設定をクリアして再読込"}
                     </button>
                   </div>
                 )}
               </div>
 
               {/* クラウド同期設定 */}
-              <div className="text-xs font-bold text-slate-500 px-2 flex items-center gap-1 mt-2"><Icon name="Cloud" size={12}/> クラウド同期 (複数端末用)</div>
+              <div className="text-xs font-bold text-slate-500 px-2 flex items-center gap-1 mt-2"><Icon name="Cloud" size={12}/> クラウド自動同期 (複数端末対応)</div>
               <input 
                 type="text" 
                 placeholder="Sync IDを入力 (例: myclass2a)" 
@@ -558,11 +577,11 @@
                 onChange={e => setSyncId(e.target.value)}
               />
               <div className="flex gap-2">
-                <button onClick={handlePushCloud} disabled={isSyncing} className="flex-1 flex items-center justify-center gap-1 px-2 py-2 bg-indigo-50 border border-indigo-200 hover:bg-indigo-100 text-indigo-700 rounded-lg transition-all text-[10px] font-bold disabled:opacity-50">
-                  <Icon name="CloudUpload" size={12} /> クラウドへ保存
+                <button onClick={handlePushCloud} className="flex-1 flex items-center justify-center gap-1 px-2 py-2 bg-indigo-50 border border-indigo-200 hover:bg-indigo-100 text-indigo-700 rounded-lg transition-all text-[10px] font-bold">
+                  <Icon name="CloudUpload" size={12} /> 手動で上書き
                 </button>
-                <button onClick={handlePullCloud} disabled={isSyncing} className="flex-1 flex items-center justify-center gap-1 px-2 py-2 bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 text-emerald-700 rounded-lg transition-all text-[10px] font-bold disabled:opacity-50">
-                  <Icon name="CloudDownload" size={12} /> クラウドから復元
+                <button onClick={handlePullCloud} className="flex-1 flex items-center justify-center gap-1 px-2 py-2 bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 text-emerald-700 rounded-lg transition-all text-[10px] font-bold">
+                  <Icon name="CloudDownload" size={12} /> 手動で取得
                 </button>
               </div>
 
@@ -594,12 +613,18 @@
               </div>
               
               <div className="flex items-center gap-2">
-                <span className="text-[10px] font-mono bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded border border-slate-200">v1.2.0</span>
+                <span className="text-[10px] font-mono bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded border border-slate-200">v1.4.0</span>
                 {isCloudReady && (
-                  <span className="relative flex h-2 w-2">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                  </span>
+                  saveStatus === 'saving' ? (
+                    <span className="flex items-center gap-1 text-[10px] text-amber-600 font-bold bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">
+                      <Icon name="Loader2" size={10} className="animate-spin" /> 保存中
+                    </span>
+                  ) : (
+                    <span className="relative flex h-2 w-2">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                    </span>
+                  )
                 )}
               </div>
             </div>
@@ -614,14 +639,14 @@
                   <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
                     <label className="block text-sm font-bold text-slate-700 mb-2 flex items-center gap-2"><Icon name="Target" size={18} className="text-blue-600" /> 年間クラス目標</label>
                     <textarea className="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none min-h-[120px]"
-                      placeholder="例：笑顔が絶えず、互いを思いやれるクラスにする..." value={goals.year} onChange={(e) => handleUpdateGoal('year', e.target.value)} />
+                      placeholder="例：笑顔が絶えず、互いを思いやれるクラスにする..." value={goals.year || ''} onChange={(e) => handleUpdateGoal('year', e.target.value)} />
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     {['term1', 'term2', 'term3'].map((term, idx) => (
                       <div key={term} className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col">
                         <label className="block text-sm font-bold text-slate-700 mb-2">{idx + 1}学期の振り返り</label>
                         <textarea className="w-full flex-1 p-4 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none min-h-[160px]"
-                          placeholder={`${idx + 1}学期のクラスの様子や反省点...`} value={goals[term]} onChange={(e) => handleUpdateGoal(term, e.target.value)} />
+                          placeholder={`${idx + 1}学期のクラスの様子や反省点...`} value={goals[term] || ''} onChange={(e) => handleUpdateGoal(term, e.target.value)} />
                       </div>
                     ))}
                   </div>
@@ -980,33 +1005,18 @@
         let csvContent = "出席番号,氏名,部活,クラスの係・委員会,行事の係,コース（国語）,コース（数学）,コース（英語）,得意教科,苦手教科,将来の夢,行きたい大学,仲の良い友達,生徒の良いところ,改善したほうがいいところ,その他\n";
         students.forEach(student => {
           const d = studentDetails[student.id] || {};
-          // CSVのパースを簡単にするため、入力された値のカンマを全角カンマに置換するか削除する
           const escapeCSV = (str) => {
             if (!str) return '';
             const s = String(str).replace(/"/g, '""');
-            if (s.includes(',') || s.includes('"') || s.includes('\n')) {
-              return `"${s}"`;
-            }
+            if (s.includes(',') || s.includes('"') || s.includes('\n')) return `"${s}"`;
             return s;
           };
           
           const row = [
-            student.number, 
-            student.name, 
-            escapeCSV(d.club), 
-            escapeCSV(d.committee), 
-            escapeCSV(d.event_role), 
-            escapeCSV(d.course_kokugo), 
-            escapeCSV(d.course_sugaku), 
-            escapeCSV(d.course_eigo), 
-            escapeCSV(d.strong_subject), 
-            escapeCSV(d.weak_subject), 
-            escapeCSV(d.dream), 
-            escapeCSV(d.university),
-            escapeCSV(d.friends),
-            escapeCSV(d.good_points),
-            escapeCSV(d.areas_to_improve),
-            escapeCSV(d.others)
+            student.number, student.name, escapeCSV(d.club), escapeCSV(d.committee), escapeCSV(d.event_role), 
+            escapeCSV(d.course_kokugo), escapeCSV(d.course_sugaku), escapeCSV(d.course_eigo), escapeCSV(d.strong_subject), 
+            escapeCSV(d.weak_subject), escapeCSV(d.dream), escapeCSV(d.university), escapeCSV(d.friends),
+            escapeCSV(d.good_points), escapeCSV(d.areas_to_improve), escapeCSV(d.others)
           ];
           csvContent += row.join(",") + "\n";
         });
@@ -1024,37 +1034,19 @@
         if (!file) return;
         const reader = new FileReader();
         reader.onload = (e) => {
-          // 簡易的なCSVパーサー（ダブルクォート対応版）
           const parseCSVLine = (text) => {
-            const result = [];
-            let current = '';
-            let inQuotes = false;
+            const result = []; let current = ''; let inQuotes = false;
             for (let i = 0; i < text.length; i++) {
               const char = text[i];
               if (inQuotes) {
                 if (char === '"') {
-                  if (i + 1 < text.length && text[i + 1] === '"') {
-                    current += '"';
-                    i++;
-                  } else {
-                    inQuotes = false;
-                  }
-                } else {
-                  current += char;
-                }
+                  if (i + 1 < text.length && text[i + 1] === '"') { current += '"'; i++; } else { inQuotes = false; }
+                } else { current += char; }
               } else {
-                if (char === '"') {
-                  inQuotes = true;
-                } else if (char === ',') {
-                  result.push(current);
-                  current = '';
-                } else {
-                  current += char;
-                }
+                if (char === '"') { inQuotes = true; } else if (char === ',') { result.push(current); current = ''; } else { current += char; }
               }
             }
-            result.push(current);
-            return result;
+            result.push(current); return result;
           };
 
           const lines = e.target.result.split(/\r\n|\n/);
@@ -1067,20 +1059,11 @@
             const student = students.find(s => s.number === studentNum);
             if (student) {
               newStudentDetails[student.id] = { 
-                club: values[2]||'', 
-                committee: values[3]||'', 
-                event_role: values[4]||'', 
-                course_kokugo: values[5]||'', 
-                course_sugaku: values[6]||'', 
-                course_eigo: values[7]||'', 
-                strong_subject: values[8]||'', 
-                weak_subject: values[9]||'', 
-                dream: values[10]||'', 
-                university: values[11]||'',
-                friends: values[12]||'',
-                good_points: values[13]||'',
-                areas_to_improve: values[14]||'',
-                others: values[15]||''
+                club: values[2]||'', committee: values[3]||'', event_role: values[4]||'', 
+                course_kokugo: values[5]||'', course_sugaku: values[6]||'', course_eigo: values[7]||'', 
+                strong_subject: values[8]||'', weak_subject: values[9]||'', dream: values[10]||'', 
+                university: values[11]||'', friends: values[12]||'', good_points: values[13]||'',
+                areas_to_improve: values[14]||'', others: values[15]||''
               };
               updatedCount++;
             }
