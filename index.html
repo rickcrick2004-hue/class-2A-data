@@ -5,11 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>2年A組 クラスノート</title>
   
+  <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   
+  <!-- React & ReactDOM -->
   <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
   
+  <!-- Babel (for compiling JSX in the browser) -->
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
   <style>
@@ -197,10 +200,15 @@
       const [configInput, setConfigInput] = useState(customFirebaseConfig ? JSON.parse(customFirebaseConfig) : '');
       const [firebaseInitError, setFirebaseInitError] = useState(null);
 
-      // Firebase Sync States
-      const [syncId, setSyncId] = useState('');
+      // Firebase Sync States (localStorageで記憶する)
+      const [syncId, setSyncId] = useState(() => localStorage.getItem('classNoteSyncId') || '');
       const [isSyncing, setIsSyncing] = useState(false);
       const [user, setUser] = useState(null);
+
+      // Sync IDを常にローカルストレージに保存
+      useEffect(() => {
+        localStorage.setItem('classNoteSyncId', syncId);
+      }, [syncId]);
 
       // クラウドが同期可能な状態か判定
       const isCloudReady = user && syncId.trim() !== '';
@@ -214,12 +222,11 @@
           return JSON.parse(str);
         } catch (e) {
           try {
-            // オブジェクトのキーにダブルクォートを追加してJSONとしてパースできるようにする簡易変換
             const jsonStr = str
-              .replace(/\s+/g, '') // 空白削除
-              .replace(/([a-zA-Z0-9_]+):/g, '"$1":') // キーをダブルクォート
-              .replace(/'/g, '"') // シングルクォートをダブルクォート
-              .replace(/,}/g, '}'); // 最後のカンマ削除
+              .replace(/\s+/g, '')
+              .replace(/([a-zA-Z0-9_]+):/g, '"$1":')
+              .replace(/'/g, '"')
+              .replace(/,}/g, '}');
             return JSON.parse(jsonStr);
           } catch (e2) {
             return null;
@@ -266,7 +273,6 @@
 
             if (!configToUse) return;
 
-            // 初期化済みのアプリがあれば取得、なければ初期化
             const app = appMod.getApps().length === 0 ? appMod.initializeApp(configToUse) : appMod.getApp();
             const auth = authMod.getAuth(app);
             const db = dbMod.getFirestore(app);
@@ -277,10 +283,8 @@
             window.firebaseGetDoc = dbMod.getDoc;
 
             if (customFirebaseConfig) {
-               // ユーザー固有Firebase設定の場合は匿名認証のみ
                await authMod.signInAnonymously(auth);
             } else {
-               // キャンバス環境デフォルト
                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
                  await authMod.signInWithCustomToken(auth, __initial_auth_token);
                } else {
@@ -297,6 +301,35 @@
         };
         initFirebaseAndAuth();
       }, [customFirebaseConfig]);
+
+      // --- 自動復元処理 (初回ロード時のみ) ---
+      const initialPullRef = useRef(false);
+      useEffect(() => {
+        if (user && syncId.trim() && window.firebaseDb && !initialPullRef.current) {
+          initialPullRef.current = true;
+          // 自動でPullを実行
+          const autoPull = async () => {
+            try {
+              const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+              const docRef = window.firebaseDoc(window.firebaseDb, 'artifacts', appId, 'public', 'data', 'class_notes', syncId.trim());
+              const snap = await window.firebaseGetDoc(docRef);
+              if (snap.exists()) {
+                const data = snap.data();
+                if(data.records) setRecords(data.records);
+                if(data.events) setEvents(data.events);
+                if(data.goals) setGoals(data.goals);
+                if(data.grades) setGrades(data.grades);
+                if(data.mockGrades) setMockGrades(data.mockGrades);
+                if(data.studentDetails) setStudentDetails(data.studentDetails);
+                showToast("クラウドから最新のデータを自動復元しました。");
+              }
+            } catch (e) {
+              console.error("Auto pull failed", e);
+            }
+          };
+          autoPull();
+        }
+      }, [user]);
 
       const showToast = (message) => {
         setToast(message);
@@ -339,7 +372,7 @@
             if(data.grades) setGrades(data.grades);
             if(data.mockGrades) setMockGrades(data.mockGrades);
             if(data.studentDetails) setStudentDetails(data.studentDetails);
-            showToast("クラウドからデータを復元しました！");
+            showToast("クラウドからデータを手動で復元しました！");
           } else {
             showToast("指定されたSync IDのデータが見つかりません。");
           }
@@ -450,7 +483,7 @@
                 <div className="flex items-center gap-3 mt-2">
                   {/* バージョン表示 */}
                   <span className="text-[10px] font-mono bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded border border-slate-200">
-                    ver. 1.1.0
+                    ver. 1.2.0
                   </span>
                   {/* 同期ステータスランプ */}
                   {isCloudReady ? (
@@ -561,7 +594,7 @@
               </div>
               
               <div className="flex items-center gap-2">
-                <span className="text-[10px] font-mono bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded border border-slate-200">v1.1.0</span>
+                <span className="text-[10px] font-mono bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded border border-slate-200">v1.2.0</span>
                 {isCloudReady && (
                   <span className="relative flex h-2 w-2">
                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
