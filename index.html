@@ -4,19 +4,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>2年A組 クラスノート</title>
-  
-  <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
-  
-  <!-- React & ReactDOM -->
   <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-  
-  <!-- Babel -->
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-
   <style>
-    /* 印刷時のスタイル調整（1ページに全情報を収めるための高密度レイアウト） */
     @media print {
       @page { margin: 10mm; }
       body { -webkit-print-color-adjust: exact; print-color-adjust: exact; font-size: 10px; line-height: 1.3; }
@@ -56,7 +48,6 @@
   <script type="text/babel" data-type="module">
     const { useState, useEffect, useRef, useCallback } = React;
 
-    // === SVG Icons Component ===
     const Icon = ({ name, size = 24, className = "" }) => {
       const icons = {
         Users: <><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></>,
@@ -89,7 +80,11 @@
         ArrowUpDown: <><path d="m21 16-4 4-4-4"/><path d="M17 20V4"/><path d="m3 8 4-4 4 4"/><path d="M7 4v16"/></>,
         ArrowUp: <><path d="m5 12 7-7 7 7"/><path d="M12 19V5"/></>,
         ArrowDown: <><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></>,
-        RotateCcw: <><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></>
+        RotateCcw: <><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></>,
+        Lightbulb: <><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.9 1.2 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/></>,
+        CheckSquare: <><rect width="18" height="18" x="3" y="3" rx="2"/><path d="m9 12 2 2 4-4"/></>,
+        Star: <><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></>,
+        Trash2: <><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></>
       };
       return (
         <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
@@ -98,7 +93,6 @@
       );
     };
 
-    // === 初期データ ===
     const INITIAL_STUDENTS = [
       { id: 1, number: 1, name: '荒牧 湊', kana: 'アラマキ ミナト', gender: 'M' },
       { id: 2, number: 2, name: '石橋 新汰', kana: 'イシバシ アラタ', gender: 'M' },
@@ -160,9 +154,17 @@
       { id: 'mock3', name: '第3回 学力推移調査' }
     ];
 
+    const IDEA_TYPES = {
+      book_video: { label: '本・動画から', color: 'bg-blue-100 text-blue-800 border-blue-200' },
+      my_idea: { label: '自分のアイデア', color: 'bg-emerald-100 text-emerald-800 border-emerald-200' },
+      good_word: { label: 'いい言葉', color: 'bg-amber-100 text-amber-800 border-amber-200' },
+      others: { label: 'その他', color: 'bg-slate-100 text-slate-800 border-slate-200' }
+    };
+
+    const INCIDENT_EVENT_TYPES = ['本人面談', '保護者連絡・面談', '関係生徒聴取', '家庭訪問', 'その他'];
+
     // === メインアプリケーション ===
     function App() {
-      // UI States
       const [activeTab, setActiveTab] = useState('dashboard');
       const [selectedStudentId, setSelectedStudentId] = useState(null);
       const [isPrintingAll, setIsPrintingAll] = useState(false);
@@ -170,24 +172,27 @@
       const [toast, setToast] = useState(null);
       const [isConfigOpen, setIsConfigOpen] = useState(false);
 
-      // Data & Sync States
       const [records, setRecords] = useState({});
       const [events, setEvents] = useState([]);
       const [goals, setGoals] = useState({ year: '', term1: '', term2: '', term3: '' });
       const [grades, setGrades] = useState({});
       const [mockGrades, setMockGrades] = useState({});
       const [studentDetails, setStudentDetails] = useState({});
+      const [ideas, setIdeas] = useState([]); 
+      const [todos, setTodos] = useState([]);
+      const [incidents, setIncidents] = useState([]);
+      
+      const [selectedIncidentId, setSelectedIncidentId] = useState(null);
+      const [isPrintingIncident, setIsPrintingIncident] = useState(false);
+      const [printingIncidentId, setPrintingIncidentId] = useState(null);
       
       const [hasInitialLoaded, setHasInitialLoaded] = useState(false);
-      const isRestoringRef = useRef(false); // 同期によるデータ書き換え中フラグ
-      const [saveStatus, setSaveStatus] = useState('idle'); // 'idle' | 'saving' | 'saved'
+      const isRestoringRef = useRef(false);
+      const [saveStatus, setSaveStatus] = useState('idle');
 
-      // Custom Firebase States
       const [customFirebaseConfig, setCustomFirebaseConfig] = useState(() => localStorage.getItem('customFirebaseConfig') || '');
       const [configInput, setConfigInput] = useState(customFirebaseConfig ? JSON.parse(customFirebaseConfig) : '');
       const [firebaseInitError, setFirebaseInitError] = useState(null);
-
-      // Firebase Sync States (localStorageで記憶する)
       const [syncId, setSyncId] = useState(() => localStorage.getItem('classNoteSyncId') || '');
       const [user, setUser] = useState(null);
 
@@ -198,22 +203,13 @@
       const isCloudReady = user && syncId.trim() !== '';
       const fileBackupRef = useRef(null);
 
-      // --- Firebase Config Parser ---
       const parseFirebaseConfig = (str) => {
         if (!str || typeof str !== 'string' || !str.trim()) return null;
-        try {
-          return JSON.parse(str);
-        } catch (e) {
+        try { return JSON.parse(str); } catch (e) {
           try {
-            const jsonStr = str
-              .replace(/\s+/g, '')
-              .replace(/([a-zA-Z0-9_]+):/g, '"$1":')
-              .replace(/'/g, '"')
-              .replace(/,}/g, '}');
+            const jsonStr = str.replace(/\s+/g, '').replace(/([a-zA-Z0-9_]+):/g, '"$1":').replace(/'/g, '"').replace(/,}/g, '}');
             return JSON.parse(jsonStr);
-          } catch (e2) {
-            return null;
-          }
+          } catch (e2) { return null; }
         }
       };
 
@@ -237,7 +233,6 @@
         }
       };
 
-      // --- Firebase Init ---
       useEffect(() => {
         const initFirebaseAndAuth = async () => {
           try {
@@ -282,72 +277,60 @@
         setToast(message);
         setTimeout(() => setToast(null), 4000);
       }, []);
-
-      // === 安全な同期ロジック (Unbreakable Sync) ===
       
-      // ローカルデータを一元管理するRef (Snapshot時の比較・自動保存用)
-      const localDataRef = useRef({ records, events, goals, grades, mockGrades, studentDetails });
+      const localDataRef = useRef({ records, events, goals, grades, mockGrades, studentDetails, ideas, todos, incidents });
       useEffect(() => {
-        localDataRef.current = { records, events, goals, grades, mockGrades, studentDetails };
-      }, [records, events, goals, grades, mockGrades, studentDetails]);
+        localDataRef.current = { records, events, goals, grades, mockGrades, studentDetails, ideas, todos, incidents };
+      }, [records, events, goals, grades, mockGrades, studentDetails, ideas, todos, incidents]);
 
-      // 1. リアルタイム同期 (Cloud -> Local)
       useEffect(() => {
         if (!user || !syncId.trim() || !window.firebaseDb || !window.firebaseOnSnapshot) return;
-        
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
         const docRef = window.firebaseDoc(window.firebaseDb, 'artifacts', appId, 'public', 'data', 'class_notes', syncId.trim());
         
         const unsubscribe = window.firebaseOnSnapshot(docRef, (snap) => {
           if (snap.exists()) {
-            // 他の端末からの変更、または初回読み込み時のみ適用 (自分が入力中のエコーバックは無視)
             if (!snap.metadata.hasPendingWrites) {
               const data = snap.data();
-              // 無限ループ防止のため、内容が違う場合のみ反映
               const cloudDataStr = JSON.stringify({
                 records: data.records || {}, events: data.events || [], goals: data.goals || {}, 
-                grades: data.grades || {}, mockGrades: data.mockGrades || {}, studentDetails: data.studentDetails || {}
+                grades: data.grades || {}, mockGrades: data.mockGrades || {}, studentDetails: data.studentDetails || {},
+                ideas: data.ideas || [], todos: data.todos || [], incidents: data.incidents || []
               });
               const localDataStr = JSON.stringify(localDataRef.current);
               
               if (cloudDataStr !== localDataStr) {
-                isRestoringRef.current = true; // この反映によって自動保存が走らないようにロック
+                isRestoringRef.current = true;
                 if(data.records) setRecords(data.records);
                 if(data.events) setEvents(data.events);
                 if(data.goals) setGoals(data.goals);
                 if(data.grades) setGrades(data.grades);
                 if(data.mockGrades) setMockGrades(data.mockGrades);
                 if(data.studentDetails) setStudentDetails(data.studentDetails);
-                
-                // Stateの反映が終わるまでロックを維持
+                if(data.ideas) setIdeas(data.ideas);
+                if(data.todos) setTodos(data.todos);
+                if(data.incidents) setIncidents(data.incidents);
                 setTimeout(() => { isRestoringRef.current = false; }, 500); 
               }
             }
           }
-          setHasInitialLoaded(true); // 初回ロード完了フラグ
+          setHasInitialLoaded(true);
         }, (err) => {
           console.error("同期エラー:", err);
           setHasInitialLoaded(true);
         });
 
-        return () => {
-          unsubscribe();
-          setHasInitialLoaded(false);
-        };
+        return () => { unsubscribe(); setHasInitialLoaded(false); };
       }, [user, syncId, customFirebaseConfig]);
 
-      // 2. 自動保存 (Local -> Cloud)
       useEffect(() => {
-        // クラウドの初回読み込みが終わっていない、または同期によるデータ書き換え中の場合は保存しない
         if (!isCloudReady || !hasInitialLoaded || isRestoringRef.current) return;
-        
         setSaveStatus('saving');
         const timer = setTimeout(async () => {
           try {
             const dataToSave = localDataRef.current;
             const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
             const docRef = window.firebaseDoc(window.firebaseDb, 'artifacts', appId, 'public', 'data', 'class_notes', syncId.trim());
-            // merge: true を使って他端末のデータを壊しにくくする
             await window.firebaseSetDoc(docRef, dataToSave, { merge: true });
             setSaveStatus('saved');
             setTimeout(() => setSaveStatus('idle'), 2000);
@@ -355,13 +338,11 @@
             console.error("Auto Save Error", e);
             setSaveStatus('idle');
           }
-        }, 1500); // 1.5秒間入力がなければ保存
-
+        }, 1500); 
         return () => clearTimeout(timer);
-      }, [records, events, goals, grades, mockGrades, studentDetails, isCloudReady, hasInitialLoaded]);
+      }, [records, events, goals, grades, mockGrades, studentDetails, ideas, todos, incidents, isCloudReady, hasInitialLoaded]);
 
 
-      // === Handlers ===
       const handlePushCloud = async () => {
         if (!isCloudReady) return showToast("エラー: Sync IDを入力してください。");
         try {
@@ -370,9 +351,7 @@
           const docRef = window.firebaseDoc(window.firebaseDb, 'artifacts', appId, 'public', 'data', 'class_notes', syncId.trim());
           await window.firebaseSetDoc(docRef, data, { merge: true });
           showToast("クラウドに手動で保存しました！");
-        } catch (e) {
-          showToast("保存に失敗しました。");
-        }
+        } catch (e) { showToast("保存に失敗しました。"); }
       };
 
       const handlePullCloud = async () => {
@@ -390,14 +369,13 @@
             if(data.grades) setGrades(data.grades);
             if(data.mockGrades) setMockGrades(data.mockGrades);
             if(data.studentDetails) setStudentDetails(data.studentDetails);
+            if(data.ideas) setIdeas(data.ideas);
+            if(data.todos) setTodos(data.todos);
+            if(data.incidents) setIncidents(data.incidents);
             setTimeout(() => { isRestoringRef.current = false; }, 500);
             showToast("クラウドから最新のデータを手動で復元しました！");
-          } else {
-            showToast("指定されたSync IDのデータが見つかりません。");
-          }
-        } catch (e) {
-          showToast("読み込みに失敗しました。");
-        }
+          } else { showToast("指定されたSync IDのデータが見つかりません。"); }
+        } catch (e) { showToast("読み込みに失敗しました。"); }
       };
 
       const handleAddRecord = (studentId, record) => {
@@ -420,7 +398,7 @@
       };
 
       const handleExportBackup = () => {
-        const data = { records, events, goals, grades, mockGrades, studentDetails };
+        const data = { records, events, goals, grades, mockGrades, studentDetails, ideas, todos, incidents };
         const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
@@ -444,23 +422,74 @@
             if(data.grades) setGrades(data.grades);
             if(data.mockGrades) setMockGrades(data.mockGrades);
             if(data.studentDetails) setStudentDetails(data.studentDetails);
+            if(data.ideas) setIdeas(data.ideas);
+            if(data.todos) setTodos(data.todos);
+            if(data.incidents) setIncidents(data.incidents);
             setTimeout(() => { isRestoringRef.current = false; }, 500);
             showToast('JSONファイルからデータを復元しました。');
-          } catch(err) {
-            showToast('ファイルの読み込みに失敗しました。');
-          }
+          } catch(err) { showToast('ファイルの読み込みに失敗しました。'); }
         };
         reader.readAsText(file);
         e.target.value = null;
       };
 
-      // 印刷処理
       useEffect(() => {
-        const handleAfterPrint = () => setIsPrintingAll(false);
+        const handleAfterPrint = () => {
+          setIsPrintingAll(false);
+          setIsPrintingIncident(false);
+        };
         window.addEventListener('afterprint', handleAfterPrint);
-        if (isPrintingAll) setTimeout(() => window.print(), 500);
+        if (isPrintingAll || isPrintingIncident) setTimeout(() => window.print(), 500);
         return () => window.removeEventListener('afterprint', handleAfterPrint);
-      }, [isPrintingAll]);
+      }, [isPrintingAll, isPrintingIncident]);
+
+      if (isPrintingIncident && printingIncidentId) {
+        const incidentToPrint = incidents.find(i => i.id === printingIncidentId);
+        if (!incidentToPrint) return null;
+        return (
+          <div className="bg-white text-black print:p-0 p-8 max-w-4xl mx-auto">
+            <div className="text-center pb-4 border-b-2 border-slate-800 mb-6">
+              <h1 className="text-2xl font-bold">生徒・保護者対応 報告書</h1>
+              <p className="mt-2 text-slate-600 text-sm">
+                出力日: {new Date().toLocaleDateString('ja-JP')} / 状態: {incidentToPrint.status === 'resolved' ? '解決済み' : '対応中'}
+              </p>
+            </div>
+            <div className="mb-8">
+              <h2 className="text-2xl font-bold mb-3">件名: {incidentToPrint.title}</h2>
+              <div className="flex gap-6 text-base text-slate-800 mb-4 bg-slate-50 p-4 rounded border border-slate-200">
+                <span className="font-bold">発生日: {incidentToPrint.date}</span>
+                <span>
+                  <span className="font-bold mr-2">関わった生徒:</span>
+                  {incidentToPrint.involvedStudents.map(id => {
+                    const st = INITIAL_STUDENTS.find(s => s.id === id);
+                    return st ? `${st.number}.${st.name}` : '';
+                  }).join(', ')}
+                </span>
+              </div>
+            </div>
+            <div>
+              <h3 className="text-xl font-bold border-b-2 border-slate-800 pb-2 mb-4">対応時系列</h3>
+              <div className="space-y-4">
+                {incidentToPrint.events && incidentToPrint.events.length > 0 ? (
+                  [...incidentToPrint.events].sort((a,b) => new Date(a.datetime) - new Date(b.datetime)).map(ev => {
+                    const dateObj = new Date(ev.datetime);
+                    const formattedDate = `${dateObj.getFullYear()}/${(dateObj.getMonth()+1).toString().padStart(2, '0')}/${dateObj.getDate().toString().padStart(2, '0')} ${dateObj.getHours().toString().padStart(2, '0')}:${dateObj.getMinutes().toString().padStart(2, '0')}`;
+                    return (
+                      <div key={ev.id} className="border border-slate-300 p-4 rounded-lg bg-white page-break-inside-avoid">
+                        <div className="flex items-center gap-3 mb-2 border-b border-slate-100 pb-2">
+                          <span className="font-bold text-slate-700">{formattedDate}</span>
+                          <span className="bg-slate-100 px-2 py-1 rounded text-xs font-bold text-slate-600 border border-slate-200">{ev.type}</span>
+                        </div>
+                        <p className="whitespace-pre-wrap text-base leading-relaxed">{ev.content}</p>
+                      </div>
+                    )
+                  })
+                ) : ( <p className="text-slate-500 italic p-4 bg-slate-50 rounded text-center">記録はありません。</p> )}
+              </div>
+            </div>
+          </div>
+        );
+      }
 
       if (isPrintingAll) {
         return (
@@ -472,15 +501,11 @@
             {INITIAL_STUDENTS.map(student => (
               <div key={student.id} className="break-after-page print:py-2">
                 <StudentDetail 
-                  student={student}
-                  records={records[student.id] || []}
+                  student={student} records={records[student.id] || []}
                   studentGrades={TEST_TERMS.reduce((acc, term) => { acc[term.id] = grades[term.id]?.[student.id] || null; return acc; }, {})}
                   studentMockGrades={MOCK_EXAMS.reduce((acc, mock) => { acc[mock.id] = mockGrades[mock.id]?.[student.id] || null; return acc; }, {})}
                   details={studentDetails[student.id] || {}}
-                  onUpdateDetails={() => {}}
-                  onAddRecord={() => {}}
-                  onBack={() => {}}
-                  isPrintAllMode={true}
+                  onUpdateDetails={() => {}} onAddRecord={() => {}} onBack={() => {}} isPrintAllMode={true}
                 />
               </div>
             ))}
@@ -490,171 +515,91 @@
 
       return (
         <div className="flex h-screen bg-slate-50 overflow-hidden text-slate-800">
-          {/* Sidebar */}
           <aside className={`${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0 absolute md:relative z-20 transition-transform duration-300 ease-in-out w-64 h-full bg-white border-r border-slate-200 flex flex-col print:hidden shadow-lg md:shadow-none`}>
             <div className="p-6 border-b border-slate-100 flex justify-between items-start">
               <div>
-                <h1 className="text-xl font-bold text-blue-700 flex items-center gap-2">
-                  <Icon name="Users" size={24} className="text-blue-600" />中2A クラスノート
-                </h1>
+                <h1 className="text-xl font-bold text-blue-700 flex items-center gap-2"><Icon name="Users" size={24} className="text-blue-600" />中2A クラスノート</h1>
                 <div className="flex items-center gap-3 mt-2">
-                  {/* バージョン表示 */}
-                  <span className="text-[10px] font-mono bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded border border-slate-200">
-                    v1.5.0
-                  </span>
-                  {/* 同期ステータスランプ */}
+                  <span className="text-[10px] font-mono bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded border border-slate-200">v1.8.0</span>
                   {isCloudReady ? (
-                    saveStatus === 'saving' ? (
-                      <span className="flex items-center gap-1.5 text-[10px] text-amber-600 font-bold bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">
-                        <Icon name="Loader2" size={10} className="animate-spin" /> 保存中...
-                      </span>
-                    ) : (
-                      <span className="flex items-center gap-1.5 text-[10px] text-emerald-600 font-bold bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-100">
-                        <span className="relative flex h-2 w-2">
-                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                          <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                        </span>
-                        自動同期ON
-                      </span>
-                    )
-                  ) : (
-                    <span className="flex items-center gap-1.5 text-[10px] text-slate-400 font-bold bg-slate-50 px-1.5 py-0.5 rounded border border-slate-200">
-                      <span className="relative inline-flex rounded-full h-2 w-2 bg-slate-300"></span>
-                      同期OFF
-                    </span>
-                  )}
+                    saveStatus === 'saving' ? ( <span className="flex items-center gap-1.5 text-[10px] text-amber-600 font-bold bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200"><Icon name="Loader2" size={10} className="animate-spin" /> 保存中...</span> ) : ( <span className="flex items-center gap-1.5 text-[10px] text-emerald-600 font-bold bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-100"><span className="relative flex h-2 w-2"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span><span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span></span> 自動同期ON</span> )
+                  ) : ( <span className="flex items-center gap-1.5 text-[10px] text-slate-400 font-bold bg-slate-50 px-1.5 py-0.5 rounded border border-slate-200"><span className="relative inline-flex rounded-full h-2 w-2 bg-slate-300"></span> 同期OFF</span> )}
                 </div>
               </div>
               <button className="md:hidden text-slate-500 p-1 -mr-2" onClick={() => setIsMobileMenuOpen(false)}>×</button>
             </div>
             
             <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
-              <NavItem icon={<Icon name="Target" size={20}/>} label="クラス目標・状況" active={activeTab === 'dashboard'} onClick={() => {setActiveTab('dashboard'); setSelectedStudentId(null); setIsMobileMenuOpen(false);}} />
-              <NavItem icon={<Icon name="Users" size={20}/>} label="生徒一覧・個人記録" active={activeTab === 'students'} onClick={() => {setActiveTab('students'); setSelectedStudentId(null); setIsMobileMenuOpen(false);}} />
-              <NavItem icon={<Icon name="ClipboardList" size={20}/>} label="生徒詳細情報" active={activeTab === 'student_details'} onClick={() => {setActiveTab('student_details'); setSelectedStudentId(null); setIsMobileMenuOpen(false);}} />
-              <NavItem icon={<Icon name="FileSpreadsheet" size={20}/>} label="定期考査 成績" active={activeTab === 'grades'} onClick={() => {setActiveTab('grades'); setSelectedStudentId(null); setIsMobileMenuOpen(false);}} />
-              <NavItem icon={<Icon name="LineChart" size={20}/>} label="模試成績 (学力推移)" active={activeTab === 'mock_grades'} onClick={() => {setActiveTab('mock_grades'); setSelectedStudentId(null); setIsMobileMenuOpen(false);}} />
-              <NavItem icon={<Icon name="Calendar" size={20}/>} label="クラスの出来事" active={activeTab === 'events'} onClick={() => {setActiveTab('events'); setSelectedStudentId(null); setIsMobileMenuOpen(false);}} />
+              <NavItem icon={<Icon name="Target" size={20}/>} label="クラス目標・状況" active={activeTab === 'dashboard'} onClick={() => {setActiveTab('dashboard'); setSelectedStudentId(null); setSelectedIncidentId(null); setIsMobileMenuOpen(false);}} />
+              <NavItem icon={<Icon name="Users" size={20}/>} label="生徒一覧・個人記録" active={activeTab === 'students'} onClick={() => {setActiveTab('students'); setSelectedStudentId(null); setSelectedIncidentId(null); setIsMobileMenuOpen(false);}} />
+              <NavItem icon={<Icon name="ClipboardList" size={20}/>} label="生徒詳細情報" active={activeTab === 'student_details'} onClick={() => {setActiveTab('student_details'); setSelectedStudentId(null); setSelectedIncidentId(null); setIsMobileMenuOpen(false);}} />
+              <NavItem icon={<Icon name="FileSpreadsheet" size={20}/>} label="定期考査 成績" active={activeTab === 'grades'} onClick={() => {setActiveTab('grades'); setSelectedStudentId(null); setSelectedIncidentId(null); setIsMobileMenuOpen(false);}} />
+              <NavItem icon={<Icon name="LineChart" size={20}/>} label="模試成績 (学力推移)" active={activeTab === 'mock_grades'} onClick={() => {setActiveTab('mock_grades'); setSelectedStudentId(null); setSelectedIncidentId(null); setIsMobileMenuOpen(false);}} />
+              <NavItem icon={<Icon name="Calendar" size={20}/>} label="クラスの出来事" active={activeTab === 'events'} onClick={() => {setActiveTab('events'); setSelectedStudentId(null); setSelectedIncidentId(null); setIsMobileMenuOpen(false);}} />
+              <NavItem icon={<Icon name="Lightbulb" size={20}/>} label="アイデア・学び" active={activeTab === 'ideas'} onClick={() => {setActiveTab('ideas'); setSelectedStudentId(null); setSelectedIncidentId(null); setIsMobileMenuOpen(false);}} />
+              <NavItem icon={<Icon name="CheckSquare" size={20}/>} label="ToDoリスト" active={activeTab === 'todos'} onClick={() => {setActiveTab('todos'); setSelectedStudentId(null); setSelectedIncidentId(null); setIsMobileMenuOpen(false);}} />
+              <NavItem icon={<Icon name="AlertTriangle" size={20}/>} label="生徒・保護者対応" active={activeTab === 'incidents'} onClick={() => {setActiveTab('incidents'); setSelectedStudentId(null); setSelectedIncidentId(null); setIsMobileMenuOpen(false);}} />
             </nav>
             
             <div className="p-4 border-t border-slate-100 bg-slate-50/50 space-y-3">
-              {/* カスタムFirebase設定 */}
               <div className="border border-slate-200 bg-white rounded-lg overflow-hidden">
-                <button 
-                  onClick={() => setIsConfigOpen(!isConfigOpen)}
-                  className="w-full flex items-center justify-between p-2 bg-slate-100 hover:bg-slate-200 transition-colors text-xs font-bold text-slate-600"
-                >
-                  <span className="flex items-center gap-1"><Icon name="Settings" size={12}/> ⚙️ 独自のFirebaseを使う</span>
-                  <Icon name="ChevronDown" size={14} className={`transform transition-transform ${isConfigOpen ? 'rotate-180' : ''}`} />
+                <button onClick={() => setIsConfigOpen(!isConfigOpen)} className="w-full flex items-center justify-between p-2 bg-slate-100 hover:bg-slate-200 transition-colors text-xs font-bold text-slate-600">
+                  <span className="flex items-center gap-1"><Icon name="Settings" size={12}/> ⚙️ 独自のFirebaseを使う</span><Icon name="ChevronDown" size={14} className={`transform transition-transform ${isConfigOpen ? 'rotate-180' : ''}`} />
                 </button>
                 {isConfigOpen && (
                   <div className="p-3 bg-white space-y-2">
-                    {customFirebaseConfig ? (
-                      <p className="text-[10px] text-emerald-600 font-bold mb-2">✅ 現在独自の設定が有効です</p>
-                    ) : (
-                      <p className="text-[10px] text-slate-500 mb-2">Firebaseコンソールの設定コードを貼り付けてください</p>
-                    )}
-                    <textarea 
-                      className="w-full p-2 border border-slate-300 rounded bg-slate-50 text-[9px] font-mono h-24 focus:ring-2 outline-none resize-none"
-                      placeholder={`{\n  apiKey: "AIzaSy...",\n  authDomain: "...",\n  projectId: "...",\n  ...\n}`}
-                      value={typeof configInput === 'string' ? configInput : JSON.stringify(configInput, null, 2)}
-                      onChange={e => setConfigInput(e.target.value)}
-                    />
+                    {customFirebaseConfig ? <p className="text-[10px] text-emerald-600 font-bold mb-2">✅ 現在独自の設定が有効です</p> : <p className="text-[10px] text-slate-500 mb-2">Firebaseコンソールの設定コードを貼り付けてください</p>}
+                    <textarea className="w-full p-2 border border-slate-300 rounded bg-slate-50 text-[9px] font-mono h-24 focus:ring-2 outline-none resize-none" placeholder={`{\n  apiKey: "AIzaSy...",\n  authDomain: "...",\n  projectId: "...",\n  ...\n}`} value={typeof configInput === 'string' ? configInput : JSON.stringify(configInput, null, 2)} onChange={e => setConfigInput(e.target.value)} />
                     {firebaseInitError && <p className="text-[10px] text-red-500 leading-tight">{firebaseInitError}</p>}
-                    <button 
-                      onClick={handleSaveFirebaseConfig} 
-                      className="w-full py-1.5 bg-slate-800 text-white rounded text-[10px] font-bold hover:bg-slate-700 transition-colors"
-                    >
-                      {configInput && typeof configInput === 'string' && configInput.trim() ? "設定を保存して再読込" : "設定をクリアして再読込"}
-                    </button>
+                    <button onClick={handleSaveFirebaseConfig} className="w-full py-1.5 bg-slate-800 text-white rounded text-[10px] font-bold hover:bg-slate-700 transition-colors">{configInput && typeof configInput === 'string' && configInput.trim() ? "設定を保存して再読込" : "設定をクリアして再読込"}</button>
                   </div>
                 )}
               </div>
-
-              {/* クラウド同期設定 */}
               <div className="text-xs font-bold text-slate-500 px-2 flex items-center gap-1 mt-2"><Icon name="Cloud" size={12}/> クラウド自動同期 (複数端末対応)</div>
-              <input 
-                type="text" 
-                placeholder="Sync IDを入力 (例: myclass2a)" 
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs font-medium focus:ring-2 focus:ring-indigo-500 outline-none"
-                value={syncId}
-                onChange={e => setSyncId(e.target.value)}
-              />
+              <input type="text" placeholder="Sync IDを入力 (例: myclass2a)" className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs font-medium focus:ring-2 focus:ring-indigo-500 outline-none" value={syncId} onChange={e => setSyncId(e.target.value)} />
               <div className="flex gap-2">
-                <button onClick={handlePushCloud} className="flex-1 flex items-center justify-center gap-1 px-2 py-2 bg-indigo-50 border border-indigo-200 hover:bg-indigo-100 text-indigo-700 rounded-lg transition-all text-[10px] font-bold">
-                  <Icon name="CloudUpload" size={12} /> 手動で上書き
-                </button>
-                <button onClick={handlePullCloud} className="flex-1 flex items-center justify-center gap-1 px-2 py-2 bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 text-emerald-700 rounded-lg transition-all text-[10px] font-bold">
-                  <Icon name="CloudDownload" size={12} /> 手動で取得
-                </button>
+                <button onClick={handlePushCloud} className="flex-1 flex items-center justify-center gap-1 px-2 py-2 bg-indigo-50 border border-indigo-200 hover:bg-indigo-100 text-indigo-700 rounded-lg transition-all text-[10px] font-bold"><Icon name="CloudUpload" size={12} /> 手動で上書き</button>
+                <button onClick={handlePullCloud} className="flex-1 flex items-center justify-center gap-1 px-2 py-2 bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 text-emerald-700 rounded-lg transition-all text-[10px] font-bold"><Icon name="CloudDownload" size={12} /> 手動で取得</button>
               </div>
-
-              {/* ローカルデータ管理 */}
               <div className="text-xs font-bold text-slate-500 px-2 flex items-center gap-1 mt-4 pt-2 border-t border-slate-200"><Icon name="Database" size={12}/> ローカル管理 (JSON)</div>
               <div className="flex gap-2">
-                <button onClick={handleExportBackup} className="flex-1 flex items-center justify-center gap-1 px-2 py-2 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 rounded-lg transition-all text-[10px] font-bold">
-                  <Icon name="Download" size={12} /> JSON保存
-                </button>
+                <button onClick={handleExportBackup} className="flex-1 flex items-center justify-center gap-1 px-2 py-2 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 rounded-lg transition-all text-[10px] font-bold"><Icon name="Download" size={12} /> JSON保存</button>
                 <input type="file" accept=".json" className="hidden" ref={fileBackupRef} onChange={handleImportBackup} />
-                <button onClick={() => fileBackupRef.current?.click()} className="flex-1 flex items-center justify-center gap-1 px-2 py-2 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 rounded-lg transition-all text-[10px] font-bold">
-                  <Icon name="Upload" size={12} /> JSON読込
-                </button>
+                <button onClick={() => fileBackupRef.current?.click()} className="flex-1 flex items-center justify-center gap-1 px-2 py-2 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 rounded-lg transition-all text-[10px] font-bold"><Icon name="Upload" size={12} /> JSON読込</button>
               </div>
-              <button onClick={() => setIsPrintingAll(true)} className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-blue-50 border border-blue-200 hover:bg-blue-100 text-blue-700 rounded-xl transition-all shadow-sm text-sm font-bold mt-2">
-                <Icon name="Printer" size={18} /> 全員の記録をPDF
-              </button>
+              <button onClick={() => setIsPrintingAll(true)} className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-blue-50 border border-blue-200 hover:bg-blue-100 text-blue-700 rounded-xl transition-all shadow-sm text-sm font-bold mt-2"><Icon name="Printer" size={18} /> 全員の記録をPDF</button>
             </div>
           </aside>
 
           {/* Main */}
           <main className="flex-1 flex flex-col h-full overflow-hidden relative">
             <div className="md:hidden bg-white border-b border-slate-200 p-4 flex items-center justify-between print:hidden z-10">
+              <div className="flex items-center gap-2"><button onClick={() => setIsMobileMenuOpen(true)} className="p-2 -ml-2 text-slate-600 hover:bg-slate-100 rounded-lg"><Icon name="Menu" size={24} /></button><span className="font-bold text-slate-800">中2A クラスノート</span></div>
               <div className="flex items-center gap-2">
-                <button onClick={() => setIsMobileMenuOpen(true)} className="p-2 -ml-2 text-slate-600 hover:bg-slate-100 rounded-lg">
-                   <Icon name="Menu" size={24} />
-                </button>
-                <span className="font-bold text-slate-800">中2A クラスノート</span>
-              </div>
-              
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] font-mono bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded border border-slate-200">v1.5.0</span>
-                {isCloudReady && (
-                  saveStatus === 'saving' ? (
-                    <span className="flex items-center gap-1 text-[10px] text-amber-600 font-bold bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">
-                      <Icon name="Loader2" size={10} className="animate-spin" /> 保存中
-                    </span>
-                  ) : (
-                    <span className="relative flex h-2 w-2">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                    </span>
-                  )
-                )}
+                <span className="text-[10px] font-mono bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded border border-slate-200">v1.8.0</span>
+                {isCloudReady && ( saveStatus === 'saving' ? ( <span className="flex items-center gap-1 text-[10px] text-amber-600 font-bold bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200"><Icon name="Loader2" size={10} className="animate-spin" /> 保存中</span> ) : ( <span className="relative flex h-2 w-2"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span><span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span></span> ) )}
               </div>
             </div>
 
             <div className="flex-1 overflow-y-auto p-4 md:p-8 print:p-0 print:overflow-visible relative">
               {activeTab === 'dashboard' && !selectedStudentId && (
-                <div className="max-w-4xl mx-auto space-y-8">
+                <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in duration-300">
                   <header className="mb-8">
                     <h2 className="text-2xl font-bold text-slate-800">クラス目標・状況</h2>
                     <p className="text-slate-500 mt-2">担任としての目標や、学期・月ごとのクラスの様子を記録します。</p>
                   </header>
                   <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
                     <label className="block text-sm font-bold text-slate-700 mb-2 flex items-center gap-2"><Icon name="Target" size={18} className="text-blue-600" /> 年間クラス目標</label>
-                    <textarea className="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none min-h-[120px]"
-                      placeholder="例：笑顔が絶えず、互いを思いやれるクラスにする..." value={goals.year || ''} onChange={(e) => handleUpdateGoal('year', e.target.value)} />
+                    <textarea className="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none min-h-[120px]" placeholder="例：笑顔が絶えず、互いを思いやれるクラスにする..." value={goals.year || ''} onChange={(e) => handleUpdateGoal('year', e.target.value)} />
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     {['term1', 'term2', 'term3'].map((term, idx) => (
                       <div key={term} className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col">
                         <label className="block text-sm font-bold text-slate-700 mb-2">{idx + 1}学期の振り返り</label>
-                        <textarea className="w-full flex-1 p-4 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none min-h-[160px]"
-                          placeholder={`${idx + 1}学期のクラスの様子や反省点...`} value={goals[term] || ''} onChange={(e) => handleUpdateGoal(term, e.target.value)} />
+                        <textarea className="w-full flex-1 p-4 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none min-h-[160px]" placeholder={`${idx + 1}学期のクラスの様子や反省点...`} value={goals[term] || ''} onChange={(e) => handleUpdateGoal(term, e.target.value)} />
                       </div>
                     ))}
                   </div>
-
                   <div className="space-y-6">
                     <h3 className="text-xl font-bold text-slate-800 border-b-2 border-slate-100 pb-2">月間目標・振り返り</h3>
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -664,21 +609,11 @@
                           <div className="space-y-4">
                             <div>
                               <label className="block text-xs font-bold text-slate-500 mb-1">目標</label>
-                              <textarea 
-                                className="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none min-h-[80px] text-sm"
-                                placeholder={`${month}月の目標...`} 
-                                value={goals[`month_${month}_goal`] || ''} 
-                                onChange={(e) => handleUpdateGoal(`month_${month}_goal`, e.target.value)} 
-                              />
+                              <textarea className="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none min-h-[80px] text-sm" placeholder={`${month}月の目標...`} value={goals[`month_${month}_goal`] || ''} onChange={(e) => handleUpdateGoal(`month_${month}_goal`, e.target.value)} />
                             </div>
                             <div>
                               <label className="block text-xs font-bold text-slate-500 mb-1">振り返り</label>
-                              <textarea 
-                                className="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none min-h-[80px] text-sm"
-                                placeholder={`${month}月の振り返り...`} 
-                                value={goals[`month_${month}_reflection`] || ''} 
-                                onChange={(e) => handleUpdateGoal(`month_${month}_reflection`, e.target.value)} 
-                              />
+                              <textarea className="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none min-h-[80px] text-sm" placeholder={`${month}月の振り返り...`} value={goals[`month_${month}_reflection`] || ''} onChange={(e) => handleUpdateGoal(`month_${month}_reflection`, e.target.value)} />
                             </div>
                           </div>
                         </div>
@@ -689,12 +624,10 @@
               )}
 
               {activeTab === 'students' && !selectedStudentId && (
-                <div className="max-w-6xl mx-auto">
+                <div className="max-w-6xl mx-auto animate-in fade-in duration-300">
                   <header className="mb-8 flex justify-between items-end flex-wrap gap-4">
                     <div>
-                      <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
-                        生徒一覧 <span className="text-base font-normal text-slate-500 bg-slate-200 px-3 py-1 rounded-full">{INITIAL_STUDENTS.length}名</span>
-                      </h2>
+                      <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-2">生徒一覧 <span className="text-base font-normal text-slate-500 bg-slate-200 px-3 py-1 rounded-full">{INITIAL_STUDENTS.length}名</span></h2>
                       <p className="text-slate-500 mt-2">生徒をクリックすると、個別の記録やPDF出力が行えます。</p>
                     </div>
                   </header>
@@ -733,27 +666,30 @@
 
               {activeTab === 'students' && selectedStudentId && (
                 <StudentDetail 
-                  student={INITIAL_STUDENTS.find(s => s.id === selectedStudentId)}
-                  records={records[selectedStudentId] || []}
+                  student={INITIAL_STUDENTS.find(s => s.id === selectedStudentId)} records={records[selectedStudentId] || []}
                   studentGrades={TEST_TERMS.reduce((acc, term) => { acc[term.id] = grades[term.id]?.[selectedStudentId] || null; return acc; }, {})}
                   studentMockGrades={MOCK_EXAMS.reduce((acc, mock) => { acc[mock.id] = mockGrades[mock.id]?.[selectedStudentId] || null; return acc; }, {})}
                   details={studentDetails[selectedStudentId] || {}}
-                  onUpdateDetails={(newDetails) => {
-                    setStudentDetails(prev => ({ ...prev, [selectedStudentId]: newDetails }));
-                    showToast("生徒詳細情報を更新しました。");
-                  }}
-                  onAddRecord={(record) => handleAddRecord(selectedStudentId, record)}
-                  onBack={() => setSelectedStudentId(null)}
-                  isPrintAllMode={false}
+                  onUpdateDetails={(newDetails) => { setStudentDetails(prev => ({ ...prev, [selectedStudentId]: newDetails })); showToast("生徒詳細情報を更新しました。"); }}
+                  onAddRecord={(record) => handleAddRecord(selectedStudentId, record)} onBack={() => setSelectedStudentId(null)} isPrintAllMode={false}
                 />
               )}
 
               {activeTab === 'student_details' && <StudentDetailsView studentDetails={studentDetails} setStudentDetails={setStudentDetails} students={INITIAL_STUDENTS} showToast={showToast} />}
               {activeTab === 'grades' && <GradesView grades={grades} setGrades={setGrades} students={INITIAL_STUDENTS} testTerms={TEST_TERMS} showToast={showToast} />}
               {activeTab === 'mock_grades' && <MockGradesView mockGrades={mockGrades} setMockGrades={setMockGrades} students={INITIAL_STUDENTS} mockExams={MOCK_EXAMS} showToast={showToast} />}
+              {activeTab === 'ideas' && <IdeasView ideas={ideas} setIdeas={setIdeas} showToast={showToast} />}
+              {activeTab === 'todos' && <TodosView todos={todos} setTodos={setTodos} showToast={showToast} />}
+              
+              {activeTab === 'incidents' && !selectedIncidentId && (
+                <IncidentsView incidents={incidents} setIncidents={setIncidents} students={INITIAL_STUDENTS} onSelectIncident={(id) => setSelectedIncidentId(id)} showToast={showToast} />
+              )}
+              {activeTab === 'incidents' && selectedIncidentId && (
+                <IncidentDetail incident={incidents.find(i => i.id === selectedIncidentId)} students={INITIAL_STUDENTS} setIncidents={setIncidents} onBack={() => setSelectedIncidentId(null)} onPrint={() => { setPrintingIncidentId(selectedIncidentId); setIsPrintingIncident(true); }} showToast={showToast} />
+              )}
               
               {activeTab === 'events' && (
-                <div className="max-w-4xl mx-auto">
+                <div className="max-w-4xl mx-auto animate-in fade-in duration-300">
                    <header className="mb-8">
                     <h2 className="text-2xl font-bold text-slate-800">クラスの出来事</h2>
                     <p className="text-slate-500 mt-2">体育祭や合唱コンクール、日常の大きな出来事を記録します。</p>
@@ -779,7 +715,6 @@
               )}
             </div>
             
-            {/* Toast Notification */}
             {toast && (
               <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-slate-800 text-white px-6 py-3 rounded-xl shadow-2xl flex items-center gap-3 z-50 animate-in fade-in slide-in-from-bottom-4 duration-300">
                 <Icon name="Check" size={18} className="text-emerald-400" />
@@ -792,6 +727,389 @@
     }
 
     // === Components ===
+
+    function IncidentsView({ incidents, setIncidents, students, onSelectIncident, showToast }) {
+      const [newIncident, setNewIncident] = useState({ title: '', date: new Date().toISOString().split('T')[0], involvedStudents: [] });
+
+      const handleAddIncident = (e) => {
+        e.preventDefault();
+        if (!newIncident.title.trim()) return;
+        const incident = { ...newIncident, id: Date.now(), status: 'active', events: [] };
+        setIncidents(prev => [incident, ...prev].sort((a,b) => new Date(b.date) - new Date(a.date)));
+        setNewIncident({ title: '', date: new Date().toISOString().split('T')[0], involvedStudents: [] });
+        showToast("新しい事案を登録しました。");
+      };
+
+      const handleStudentToggle = (studentId) => {
+        setNewIncident(prev => {
+          const isSelected = prev.involvedStudents.includes(studentId);
+          if (isSelected) { return { ...prev, involvedStudents: prev.involvedStudents.filter(id => id !== studentId) }; } 
+          else { return { ...prev, involvedStudents: [...prev.involvedStudents, studentId] }; }
+        });
+      };
+
+      return (
+        <div className="max-w-4xl mx-auto animate-in fade-in duration-300">
+          <header className="mb-8">
+            <h2 className="text-2xl font-bold text-slate-800">生徒・保護者対応</h2>
+            <p className="text-slate-500 mt-2">発生したトラブルや対応事案ごとに、関わった生徒と時系列の対応記録を管理します。</p>
+          </header>
+          <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 mb-8">
+            <h3 className="text-lg font-bold text-slate-700 mb-4 flex items-center gap-2"><Icon name="Plus" size={20} className="text-blue-600" /> 新しい事案を登録</h3>
+            <form onSubmit={handleAddIncident} className="space-y-4">
+              <div className="flex flex-wrap gap-4">
+                <div className="flex-[2] min-w-[200px]">
+                  <label className="block text-xs font-bold text-slate-500 mb-1">件名 (トラブルの概要)</label>
+                  <input type="text" required placeholder="例: 〇〇さんと△△さんのSNSトラブル" className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500" value={newIncident.title} onChange={e => setNewIncident({...newIncident, title: e.target.value})} />
+                </div>
+                <div className="flex-1 min-w-[120px]">
+                  <label className="block text-xs font-bold text-slate-500 mb-1">発生日</label>
+                  <input type="date" required className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500" value={newIncident.date} onChange={e => setNewIncident({...newIncident, date: e.target.value})} />
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-500 mb-1">関わった生徒 (複数選択可)</label>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2 max-h-48 overflow-y-auto p-3 border border-slate-200 rounded-xl bg-slate-50">
+                  {students.map(s => (
+                    <label key={s.id} className="flex items-center gap-2 text-sm cursor-pointer hover:bg-slate-100 p-1.5 rounded transition-colors select-none">
+                      <input type="checkbox" className="w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500" checked={newIncident.involvedStudents.includes(s.id)} onChange={() => handleStudentToggle(s.id)} />
+                      <span className="truncate">{s.number}. {s.name}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+              <div className="flex justify-end pt-2">
+                <button type="submit" className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-xl font-bold text-sm hover:bg-blue-700 shadow-sm transition-all"><Icon name="Save" size={18} /> 事案を登録</button>
+              </div>
+            </form>
+          </div>
+          <div className="space-y-4">
+            {incidents.length > 0 ? incidents.map(incident => (
+              <div key={incident.id} onClick={() => onSelectIncident(incident.id)} className={`bg-white p-5 rounded-2xl border ${incident.status === 'active' ? 'border-amber-300 shadow-md ring-1 ring-amber-100' : 'border-slate-200 shadow-sm'} cursor-pointer hover:border-blue-400 transition-all group`}>
+                <div className="flex justify-between items-start mb-3 gap-4">
+                  <div className="flex items-center gap-3">
+                    {incident.status === 'active' ? (
+                      <span className="bg-amber-100 text-amber-700 px-2.5 py-1 rounded-md text-xs font-bold flex items-center gap-1 border border-amber-200"><Icon name="AlertTriangle" size={12} /> 対応中</span>
+                    ) : (
+                      <span className="bg-slate-100 text-slate-600 px-2.5 py-1 rounded-md text-xs font-bold flex items-center gap-1 border border-slate-200"><Icon name="Check" size={12} /> 解決済み</span>
+                    )}
+                    <span className="text-sm font-bold text-slate-400">{incident.date}</span>
+                  </div>
+                  <Icon name="ChevronRight" size={20} className="text-slate-300 group-hover:text-blue-500 transition-colors" />
+                </div>
+                <h4 className={`text-lg font-bold ${incident.status === 'active' ? 'text-slate-800' : 'text-slate-600'} mb-3`}>{incident.title}</h4>
+                <div className="flex flex-wrap gap-1.5">
+                  {incident.involvedStudents.map(id => {
+                    const st = students.find(s => s.id === id);
+                    return st ? <span key={id} className={`text-xs px-2 py-1 rounded-full border ${incident.status === 'active' ? 'bg-amber-50 text-amber-800 border-amber-200' : 'bg-slate-50 text-slate-500 border-slate-200'}`}>{st.name}</span> : null;
+                  })}
+                </div>
+              </div>
+            )) : (
+              <div className="text-center py-12 bg-white rounded-2xl border border-dashed border-slate-200">
+                <Icon name="AlertTriangle" size={48} className="mx-auto text-slate-300 mb-4" />
+                <p className="text-slate-500">登録された事案はありません。</p>
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    function IncidentDetail({ incident, students, setIncidents, onBack, onPrint, showToast }) {
+      const [newEvent, setNewEvent] = useState({ datetime: new Date().toISOString().slice(0, 16), type: INCIDENT_EVENT_TYPES[0], content: '' });
+
+      const handleAddEvent = (e) => {
+        e.preventDefault();
+        if (!newEvent.content.trim()) return;
+        const ev = { ...newEvent, id: Date.now() };
+        setIncidents(prev => prev.map(inc => {
+          if (inc.id === incident.id) { return { ...inc, events: [...(inc.events || []), ev] }; }
+          return inc;
+        }));
+        setNewEvent({ datetime: new Date().toISOString().slice(0, 16), type: INCIDENT_EVENT_TYPES[0], content: '' });
+        showToast("対応記録を追加しました。");
+      };
+
+      const toggleStatus = () => {
+        const newStatus = incident.status === 'active' ? 'resolved' : 'active';
+        setIncidents(prev => prev.map(inc => inc.id === incident.id ? { ...inc, status: newStatus } : inc));
+        showToast(newStatus === 'resolved' ? "事案を解決済みに変更しました。" : "事案を対応中に戻しました。");
+      };
+
+      return (
+        <div className="max-w-4xl mx-auto animate-in fade-in duration-300">
+          <div className="print:hidden mb-6 flex gap-4 justify-between items-center">
+            <button onClick={onBack} className="flex items-center text-slate-500 hover:text-blue-600 font-medium px-4 py-2 hover:bg-white rounded-lg transition-colors"><Icon name="ArrowLeft" size={18} className="mr-2" /> 事案一覧に戻る</button>
+            <button onClick={onPrint} className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-xl font-medium text-sm shadow-sm hover:shadow-md transition-all"><Icon name="Printer" size={18} /> 報告書をPDF出力</button>
+          </div>
+          <div className={`bg-white p-8 rounded-2xl shadow-sm border mb-8 ${incident.status === 'active' ? 'border-amber-300 ring-2 ring-amber-50' : 'border-slate-200'}`}>
+            <div className="flex justify-between items-start mb-4">
+              <div className="flex items-center gap-3">
+                {incident.status === 'active' ? (
+                  <span className="bg-amber-100 text-amber-700 px-3 py-1.5 rounded-lg text-sm font-bold flex items-center gap-1.5 border border-amber-200"><Icon name="AlertTriangle" size={16} /> 対応中</span>
+                ) : (
+                  <span className="bg-slate-100 text-slate-600 px-3 py-1.5 rounded-lg text-sm font-bold flex items-center gap-1.5 border border-slate-200"><Icon name="Check" size={16} /> 解決済み</span>
+                )}
+                <span className="text-slate-500 font-bold bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-200">発生日: {incident.date}</span>
+              </div>
+              <button onClick={toggleStatus} className={`px-4 py-2 rounded-lg text-sm font-bold transition-colors ${incident.status === 'active' ? 'bg-slate-800 text-white hover:bg-slate-700' : 'bg-white border border-slate-300 text-slate-600 hover:bg-slate-50'}`}>
+                {incident.status === 'active' ? '解決済みにする' : '対応中に戻す'}
+              </button>
+            </div>
+            <h2 className="text-3xl font-extrabold text-slate-800 mb-6 leading-snug">{incident.title}</h2>
+            <div>
+              <h3 className="text-sm font-bold text-slate-500 mb-2">関わった生徒</h3>
+              <div className="flex flex-wrap gap-2">
+                {incident.involvedStudents.map(id => {
+                  const st = students.find(s => s.id === id);
+                  return st ? <span key={id} className="text-sm font-bold px-3 py-1.5 rounded-lg bg-blue-50 text-blue-800 border border-blue-200">{st.number}. {st.name}</span> : null;
+                })}
+              </div>
+            </div>
+          </div>
+          <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 mb-8">
+            <h3 className="text-lg font-bold text-slate-700 mb-4 flex items-center gap-2"><Icon name="Plus" size={20} className="text-blue-600" /> 新しい対応を記録</h3>
+            <form onSubmit={handleAddEvent} className="space-y-4">
+              <div className="flex gap-4">
+                <div className="flex-[2] min-w-[200px]">
+                  <label className="block text-sm font-bold text-slate-600 mb-1">日時</label>
+                  <input type="datetime-local" required className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500" value={newEvent.datetime} onChange={e => setNewEvent({...newEvent, datetime: e.target.value})} />
+                </div>
+                <div className="flex-1 min-w-[150px]">
+                  <label className="block text-sm font-bold text-slate-600 mb-1">対応の種類</label>
+                  <select className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500" value={newEvent.type} onChange={e => setNewEvent({...newEvent, type: e.target.value})}>
+                    {INCIDENT_EVENT_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-bold text-slate-600 mb-1">内容</label>
+                <textarea required placeholder="誰とどのような話をしたか、どのような対応をしたかを記録..." className="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 min-h-[120px] resize-y" value={newEvent.content} onChange={e => setNewEvent({...newEvent, content: e.target.value})} />
+              </div>
+              <div className="flex justify-end">
+                <button type="submit" className="flex items-center gap-2 px-6 py-3 bg-slate-800 text-white rounded-xl font-bold text-sm hover:bg-slate-700 shadow-sm"><Icon name="Save" size={18} /> 記録を保存</button>
+              </div>
+            </form>
+          </div>
+          <div>
+            <h3 className="text-xl font-bold text-slate-800 border-b-2 border-slate-100 pb-3 mb-6">対応の時系列</h3>
+            <div className="space-y-6 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-slate-200 before:to-transparent">
+              {incident.events && incident.events.length > 0 ? (
+                [...incident.events].sort((a,b) => new Date(a.datetime) - new Date(b.datetime)).map((ev, idx) => {
+                  const dateObj = new Date(ev.datetime);
+                  const formattedDate = `${dateObj.getFullYear()}/${(dateObj.getMonth()+1).toString().padStart(2, '0')}/${dateObj.getDate().toString().padStart(2, '0')} ${dateObj.getHours().toString().padStart(2, '0')}:${dateObj.getMinutes().toString().padStart(2, '0')}`;
+                  return (
+                    <div key={ev.id} className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active">
+                      <div className="flex items-center justify-center w-10 h-10 rounded-full border-4 border-white bg-blue-500 text-white shadow shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 z-10"><Icon name="MessageCircle" size={16} /></div>
+                      <div className="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+                        <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+                          <span className="font-bold text-slate-500 text-xs">{formattedDate}</span>
+                          <span className="bg-slate-100 text-slate-600 px-2.5 py-1 rounded text-xs font-bold border border-slate-200">{ev.type}</span>
+                        </div>
+                        <p className="text-slate-700 leading-relaxed whitespace-pre-wrap">{ev.content}</p>
+                      </div>
+                    </div>
+                  );
+                })
+              ) : ( <div className="text-center py-12 relative z-10"><p className="text-slate-500 bg-slate-50 inline-block px-6 py-2 rounded-full border border-slate-200">まだ対応記録はありません。</p></div> )}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    function IdeasView({ ideas, setIdeas, showToast }) {
+      const [newIdea, setNewIdea] = useState({ type: 'my_idea', content: '' });
+      const [sortBy, setSortBy] = useState('date_desc');
+
+      const handleAddIdea = (e) => {
+        e.preventDefault();
+        if (!newIdea.content.trim()) return;
+        const idea = { ...newIdea, id: Date.now(), createdAt: Date.now(), dateStr: new Date().toISOString().split('T')[0] };
+        setIdeas(prev => [idea, ...prev]);
+        setNewIdea({ type: 'my_idea', content: '' });
+        showToast("アイデアを記録しました。");
+      };
+
+      const handleDeleteIdea = (id) => {
+        if(window.confirm("このアイデアを削除しますか？")) { setIdeas(prev => prev.filter(i => i.id !== id)); }
+      };
+
+      const sortedIdeas = [...ideas].sort((a, b) => {
+        if (sortBy === 'date_desc') return b.createdAt - a.createdAt;
+        if (sortBy === 'date_asc') return a.createdAt - b.createdAt;
+        if (sortBy === 'type') {
+          if (a.type === b.type) return b.createdAt - a.createdAt;
+          return a.type.localeCompare(b.type);
+        }
+        return 0;
+      });
+
+      return (
+        <div className="max-w-4xl mx-auto animate-in fade-in duration-300">
+          <header className="mb-8 flex justify-between items-end flex-wrap gap-4">
+            <div>
+              <h2 className="text-2xl font-bold text-slate-800">アイデア・学び</h2>
+              <p className="text-slate-500 mt-2">本や動画からの学び、思いついたアイデア、使えそうないい言葉をストックします。</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-bold text-slate-600">並び替え:</span>
+              <select className="p-2 bg-white border border-slate-200 rounded-lg text-sm font-bold text-slate-700 focus:ring-2 focus:ring-blue-500 outline-none shadow-sm" value={sortBy} onChange={e => setSortBy(e.target.value)}>
+                <option value="date_desc">登録が新しい順</option><option value="date_asc">登録が古い順</option><option value="type">内容（カテゴリ）順</option>
+              </select>
+            </div>
+          </header>
+          <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 mb-8">
+            <h3 className="text-lg font-bold text-slate-700 mb-4 flex items-center gap-2"><Icon name="Lightbulb" size={20} className="text-amber-500" /> 新しいアイデアをストック</h3>
+            <form onSubmit={handleAddIdea} className="space-y-4">
+              <div>
+                <label className="block text-sm font-bold text-slate-600 mb-2">種類</label>
+                <div className="flex flex-wrap gap-3">
+                  {Object.entries(IDEA_TYPES).map(([k, v]) => (
+                    <label key={k} className={`cursor-pointer px-4 py-2 rounded-xl border ${newIdea.type === k ? 'border-blue-500 bg-blue-50 shadow-sm ring-1 ring-blue-200' : 'border-slate-200 bg-white hover:bg-slate-50'} transition-all flex items-center gap-2 text-sm font-medium`}>
+                      <input type="radio" name="idea_type" value={k} checked={newIdea.type === k} onChange={e => setNewIdea({...newIdea, type: e.target.value})} className="hidden" />
+                      <span className={`w-3 h-3 rounded-full ${v.color.split(' ')[0]}`}></span>{v.label}
+                    </label>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-bold text-slate-600 mb-1">内容</label>
+                <textarea required placeholder="思いついたことや、メモしておきたい言葉を入力..." className="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 min-h-[120px]" value={newIdea.content} onChange={e => setNewIdea({...newIdea, content: e.target.value})} />
+              </div>
+              <div className="flex justify-end">
+                <button type="submit" className="flex items-center gap-2 px-6 py-3 bg-slate-800 text-white rounded-xl font-bold text-sm hover:bg-slate-700 shadow-sm"><Icon name="Save" size={18} /> アイデアを保存</button>
+              </div>
+            </form>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {sortedIdeas.length > 0 ? sortedIdeas.map(idea => {
+              const typeInfo = IDEA_TYPES[idea.type] || IDEA_TYPES.others;
+              return (
+                <div key={idea.id} className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex flex-col justify-between hover:shadow-md transition-shadow relative group">
+                  <button onClick={() => handleDeleteIdea(idea.id)} className="absolute top-4 right-4 text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity bg-white rounded-full p-1 shadow-sm border border-slate-100"><Icon name="Trash2" size={16} /></button>
+                  <div className="mb-3">
+                    <div className="flex items-center justify-between mb-3 pr-6"><span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold border ${typeInfo.color}`}>{typeInfo.label}</span><span className="text-xs text-slate-400 font-bold bg-slate-100 px-2 py-0.5 rounded">{idea.dateStr}</span></div>
+                    <p className="whitespace-pre-wrap text-slate-700 text-sm leading-relaxed">{idea.content}</p>
+                  </div>
+                </div>
+              );
+            }) : (
+              <div className="col-span-full text-center py-12 bg-white rounded-2xl border border-dashed border-slate-200">
+                <Icon name="Lightbulb" size={48} className="mx-auto text-slate-300 mb-4" />
+                <p className="text-slate-500">まだアイデアがありません。</p>
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    function TodosView({ todos, setTodos, showToast }) {
+      const [newTodo, setNewTodo] = useState({ title: '', detail: '', date: new Date().toISOString().split('T')[0], isImportant: false });
+
+      const handleAddTodo = (e) => {
+        e.preventDefault();
+        if (!newTodo.title.trim()) return;
+        const todo = { ...newTodo, id: Date.now(), createdAt: Date.now(), isCompleted: false };
+        setTodos(prev => [todo, ...prev]);
+        setNewTodo({ title: '', detail: '', date: new Date().toISOString().split('T')[0], isImportant: false });
+        showToast("タスクを追加しました。");
+      };
+
+      const handleToggleComplete = (id) => { setTodos(prev => prev.map(t => t.id === id ? { ...t, isCompleted: !t.isCompleted } : t)); };
+      const handleToggleImportant = (id) => { setTodos(prev => prev.map(t => t.id === id ? { ...t, isImportant: !t.isImportant } : t)); };
+      const handleDeleteTodo = (id) => { if(window.confirm("このタスクを削除しますか？")) { setTodos(prev => prev.filter(t => t.id !== id)); } };
+
+      const activeTodos = todos.filter(t => !t.isCompleted);
+      const completedTodos = todos.filter(t => t.isCompleted);
+
+      activeTodos.sort((a, b) => {
+        if (a.isImportant && !b.isImportant) return -1;
+        if (!a.isImportant && b.isImportant) return 1;
+        if (a.date > b.date) return -1;
+        if (a.date < b.date) return 1;
+        return b.createdAt - a.createdAt;
+      });
+      completedTodos.sort((a, b) => b.createdAt - a.createdAt);
+
+      return (
+        <div className="max-w-4xl mx-auto animate-in fade-in duration-300">
+          <header className="mb-8">
+            <h2 className="text-2xl font-bold text-slate-800">ToDoリスト</h2>
+            <p className="text-slate-500 mt-2">タスクを管理します。「重要☆」にチェックを入れたタスクや、日付が新しいものが自動的に上に表示されます。</p>
+          </header>
+          <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 mb-8">
+            <form onSubmit={handleAddTodo} className="space-y-4">
+              <div className="flex flex-wrap gap-4">
+                <div className="flex-[2] min-w-[200px]">
+                  <label className="block text-xs font-bold text-slate-500 mb-1">新しいタスク</label>
+                  <input type="text" required placeholder="タスクのタイトル" className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500" value={newTodo.title} onChange={e => setNewTodo({...newTodo, title: e.target.value})} />
+                </div>
+                <div className="flex-1 min-w-[120px]">
+                  <label className="block text-xs font-bold text-slate-500 mb-1">日付</label>
+                  <input type="date" required className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500" value={newTodo.date} onChange={e => setNewTodo({...newTodo, date: e.target.value})} />
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-500 mb-1">詳細（任意）</label>
+                <textarea placeholder="タスクの詳細メモ..." className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 min-h-[60px] resize-y" value={newTodo.detail} onChange={e => setNewTodo({...newTodo, detail: e.target.value})} />
+              </div>
+              <div className="flex justify-between items-center mt-2 border-t border-slate-100 pt-4">
+                <label className="flex items-center gap-2 cursor-pointer p-2 hover:bg-slate-50 rounded-lg transition-colors border border-transparent hover:border-slate-200 select-none">
+                  <div className={`w-6 h-6 flex items-center justify-center rounded-md border ${newTodo.isImportant ? 'bg-amber-100 border-amber-300 text-amber-500' : 'bg-slate-50 border-slate-300 text-slate-300'}`}><Icon name="Star" size={14} className={newTodo.isImportant ? 'fill-current' : ''} /></div>
+                  <input type="checkbox" className="hidden" checked={newTodo.isImportant} onChange={e => setNewTodo({...newTodo, isImportant: e.target.checked})} />
+                  <span className={`text-sm font-bold ${newTodo.isImportant ? 'text-amber-600' : 'text-slate-600'}`}>重要☆</span>
+                </label>
+                <button type="submit" className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 text-white rounded-xl font-bold text-sm hover:bg-blue-700 shadow-sm transition-all"><Icon name="Plus" size={18} /> タスクを追加</button>
+              </div>
+            </form>
+          </div>
+          <div className="space-y-4 mb-12">
+            <h3 className="text-lg font-bold text-slate-700 flex items-center gap-2 border-b-2 border-slate-100 pb-2">未完了のタスク <span className="bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full text-xs">{activeTodos.length}</span></h3>
+            {activeTodos.length > 0 ? activeTodos.map(todo => (
+              <div key={todo.id} className={`bg-white p-4 rounded-xl border ${todo.isImportant ? 'border-amber-300 shadow-sm ring-2 ring-amber-100/50' : 'border-slate-200'} flex gap-4 items-start group transition-all`}>
+                <button onClick={() => handleToggleComplete(todo.id)} className="mt-1 flex-shrink-0 w-6 h-6 rounded border-2 border-slate-300 hover:border-emerald-500 hover:bg-emerald-50 flex items-center justify-center text-transparent hover:text-emerald-500 transition-colors bg-slate-50"><Icon name="Check" size={14} /></button>
+                <div className="flex-1">
+                  <div className="flex justify-between items-start gap-4">
+                    <div className="flex items-center gap-2">
+                      <button onClick={() => handleToggleImportant(todo.id)} className={`${todo.isImportant ? 'text-amber-400 hover:text-amber-500' : 'text-slate-300 hover:text-amber-300'} transition-colors`}><Icon name="Star" size={18} className={todo.isImportant ? 'fill-current' : ''} /></button>
+                      <h4 className={`font-bold text-base ${todo.isImportant ? 'text-amber-900' : 'text-slate-800'}`}>{todo.title}</h4>
+                    </div>
+                    <span className="text-xs font-bold text-slate-500 bg-slate-100 px-2 py-1 rounded border border-slate-200 whitespace-nowrap">{todo.date}</span>
+                  </div>
+                  {todo.detail && <p className="mt-2 text-sm text-slate-600 bg-slate-50 p-3 rounded-lg border border-slate-100">{todo.detail}</p>}
+                </div>
+                <button onClick={() => handleDeleteTodo(todo.id)} className="text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity bg-white rounded-full p-1 border border-transparent hover:border-red-100 hover:bg-red-50"><Icon name="Trash2" size={18} /></button>
+              </div>
+            )) : (
+              <div className="text-center py-10 bg-white rounded-xl border border-dashed border-slate-200">
+                <Icon name="CheckSquare" size={40} className="mx-auto text-slate-300 mb-3" />
+                <p className="text-slate-500 font-medium">未完了のタスクはありません！</p>
+              </div>
+            )}
+          </div>
+          {completedTodos.length > 0 && (
+            <div className="space-y-4">
+              <h3 className="text-lg font-bold text-slate-500 flex items-center gap-2 border-b-2 border-slate-100 pb-2">完了済みフォルダ <span className="bg-slate-100 text-slate-400 px-2 py-0.5 rounded-full text-xs">{completedTodos.length}</span></h3>
+              <div className="grid grid-cols-1 gap-3 opacity-70 hover:opacity-100 transition-opacity">
+                {completedTodos.map(todo => (
+                  <div key={todo.id} className="bg-slate-50 p-3 rounded-xl border border-slate-200 flex gap-3 items-center group">
+                    <button onClick={() => handleToggleComplete(todo.id)} className="flex-shrink-0 w-6 h-6 rounded bg-emerald-500 text-white flex items-center justify-center hover:bg-emerald-600 transition-colors shadow-sm"><Icon name="Check" size={14} /></button>
+                    <div className="flex-1 flex justify-between items-center gap-4">
+                      <h4 className="font-bold text-slate-500 line-through text-sm truncate">{todo.title}</h4>
+                      <span className="text-[10px] font-bold text-slate-400 bg-white border border-slate-200 px-1.5 py-0.5 rounded whitespace-nowrap">{todo.date}</span>
+                    </div>
+                    <button onClick={() => handleDeleteTodo(todo.id)} className="text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"><Icon name="Trash2" size={16} /></button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    }
 
     function NavItem({ icon, label, active, onClick }) {
       return (
@@ -826,9 +1144,7 @@
             <textarea required className="w-full p-4 bg-slate-50 border rounded-xl min-h-[120px]" value={event.content} onChange={e => setEvent({...event, content: e.target.value})} />
           </div>
           <div className="flex justify-end">
-            <button type="submit" className="flex items-center gap-2 px-6 py-3 bg-slate-800 text-white rounded-xl font-bold text-sm">
-              <Icon name="Save" size={18} /> クラスの記録を保存
-            </button>
+            <button type="submit" className="flex items-center gap-2 px-6 py-3 bg-slate-800 text-white rounded-xl font-bold text-sm"><Icon name="Save" size={18} /> クラスの記録を保存</button>
           </div>
         </form>
       );
@@ -839,9 +1155,7 @@
       const [isEditingDetails, setIsEditingDetails] = useState(false);
       const [editDetails, setEditDetails] = useState({});
 
-      useEffect(() => {
-        setEditDetails(details);
-      }, [details]);
+      useEffect(() => { setEditDetails(details); }, [details]);
 
       const handleSubmit = (e) => {
         e.preventDefault();
@@ -850,10 +1164,7 @@
         setNewRecord({ ...newRecord, content: '' });
       };
 
-      const handleSaveDetails = () => {
-        onUpdateDetails(editDetails);
-        setIsEditingDetails(false);
-      };
+      const handleSaveDetails = () => { onUpdateDetails(editDetails); setIsEditingDetails(false); };
 
       const detailFields = [
         { key: 'scholarship', label: '奨学生', type: 'select', options: ['', '奨A', '奨B', '奨C'] },
@@ -877,11 +1188,10 @@
         <div className="max-w-4xl mx-auto print:max-w-none">
           {!isPrintAllMode && (
             <div className="print:hidden mb-6 flex gap-4 justify-between items-center">
-              <button onClick={onBack} className="flex items-center text-slate-500 hover:text-blue-600 font-medium px-4 py-2 hover:bg-white rounded-lg"><Icon name="ArrowLeft" size={18} className="mr-2" /> 生徒一覧に戻る</button>
+              <button onClick={onBack} className="flex items-center text-slate-500 hover:text-blue-600 font-medium px-4 py-2 hover:bg-white rounded-lg transition-colors"><Icon name="ArrowLeft" size={18} className="mr-2" /> 生徒一覧に戻る</button>
               <button onClick={() => window.print()} className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-xl font-medium text-sm shadow-sm hover:shadow-md transition-all"><Icon name="Printer" size={18} /> この記録をPDF出力</button>
             </div>
           )}
-
           <div className="bg-white p-8 rounded-2xl shadow-sm border border-slate-200 mb-8 print:shadow-none print:border-b-2 print:border-slate-800 print:rounded-none print:px-0 print:py-2 print:mb-4">
             <div className="flex justify-between mb-2 items-end">
               <span className="text-lg font-bold text-slate-400 print:text-xs">出席番号 {student.number}番</span>
@@ -896,19 +1206,14 @@
             </div>
           </div>
 
-          {/* 生徒詳細情報セクション */}
           <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 mb-8 print:p-0 print:shadow-none print:border-none print:mb-4">
             <div className="flex justify-between items-center border-b-2 border-slate-100 pb-3 mb-4 print:border-slate-300 print:pb-1 print:mb-2">
               <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2"><Icon name="ClipboardList" size={20} className="text-indigo-600 print:text-black print:hidden" /> 生徒詳細情報</h3>
               {!isPrintAllMode && !isEditingDetails && (
-                <button onClick={() => setIsEditingDetails(true)} className="print:hidden flex items-center gap-1 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-sm font-bold transition-colors">
-                  <Icon name="Edit3" size={16} /> 編集
-                </button>
+                <button onClick={() => setIsEditingDetails(true)} className="print:hidden flex items-center gap-1 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-sm font-bold transition-colors"><Icon name="Edit3" size={16} /> 編集</button>
               )}
               {!isPrintAllMode && isEditingDetails && (
-                <button onClick={handleSaveDetails} className="print:hidden flex items-center gap-1 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-bold transition-colors shadow-sm">
-                  <Icon name="Check" size={16} /> 保存
-                </button>
+                <button onClick={handleSaveDetails} className="print:hidden flex items-center gap-1 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-bold transition-colors shadow-sm"><Icon name="Check" size={16} /> 保存</button>
               )}
             </div>
             
@@ -918,21 +1223,11 @@
                   <span className="text-xs font-bold text-slate-500 mb-1 print:mb-0 print:text-[8px]">{field.label}</span>
                   {isEditingDetails ? (
                     field.type === 'select' ? (
-                      <select 
-                        className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none text-sm transition-all"
-                        value={editDetails[field.key] || ''} 
-                        onChange={e => setEditDetails({...editDetails, [field.key]: e.target.value})}
-                      >
+                      <select className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none text-sm transition-all" value={editDetails[field.key] || ''} onChange={e => setEditDetails({...editDetails, [field.key]: e.target.value})}>
                         {field.options.map(opt => <option key={opt} value={opt}>{opt || '未選択'}</option>)}
                       </select>
                     ) : (
-                      <input 
-                        type="text" 
-                        className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none text-sm transition-all"
-                        value={editDetails[field.key] || ''} 
-                        onChange={e => setEditDetails({...editDetails, [field.key]: e.target.value})}
-                        placeholder="未入力"
-                      />
+                      <input type="text" className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none text-sm transition-all" value={editDetails[field.key] || ''} onChange={e => setEditDetails({...editDetails, [field.key]: e.target.value})} placeholder="未入力" />
                     )
                   ) : (
                     <span className="text-sm text-slate-800 font-medium py-1 border-b border-transparent bg-slate-50 px-3 rounded-md min-h-[28px] flex items-center print:bg-transparent print:px-1 print:border-b-slate-200">
@@ -944,7 +1239,6 @@
             </div>
           </div>
 
-          {/* 定期考査＆模試成績 セクション */}
           <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 mb-8 print:p-0 print:shadow-none print:border-none print:mb-4">
             <h3 className="text-lg font-bold text-slate-800 border-b-2 border-slate-100 pb-3 mb-4 flex items-center gap-2 print:border-slate-300 print:pb-1 print:mb-2">
               <Icon name="FileSpreadsheet" size={20} className="text-blue-600 print:hidden" /> 定期考査 成績一覧
@@ -959,7 +1253,6 @@
                 })}
               </tbody></table>
             </div>
-
             <h3 className="text-lg font-bold text-slate-800 border-b-2 border-slate-100 pb-3 mb-4 flex items-center gap-2 print:border-slate-300 print:pb-1 print:mb-2">
               <Icon name="LineChart" size={20} className="text-blue-600 print:hidden" /> 学力推移調査 成績一覧
             </h3>
@@ -976,7 +1269,6 @@
             </div>
           </div>
 
-          {/* 記録追加フォーム（印刷時は完全非表示） */}
           {!isPrintAllMode && (
             <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 mb-8 print:hidden">
               <h3 className="text-lg font-bold text-slate-700 mb-4 flex items-center gap-2"><Icon name="Plus" size={20} className="text-blue-600" /> 新しい記録を追加</h3>
@@ -988,7 +1280,6 @@
             </div>
           )}
 
-          {/* これまでの記録 セクション */}
           <div>
             <h3 className="text-xl font-bold text-slate-800 border-b-2 border-slate-100 pb-3 mb-6 print:border-slate-300 print:pb-1 print:mb-2">これまでの記録</h3>
             <div className="space-y-6 print:space-y-2">
@@ -1016,27 +1307,18 @@
 
       const handleSort = (key) => {
         let direction = 'desc';
-        if (sortConfig.key === key && sortConfig.direction === 'desc') {
-          direction = 'asc';
-        }
+        if (sortConfig.key === key && sortConfig.direction === 'desc') { direction = 'asc'; }
         setSortConfig({ key, direction });
       };
 
-      const resetSort = () => {
-        setSortConfig({ key: 'number', direction: 'asc' });
-      };
+      const resetSort = () => { setSortConfig({ key: 'number', direction: 'asc' }); };
 
       const sortedStudents = [...students].sort((a, b) => {
-        if (sortConfig.key === 'number') {
-          return sortConfig.direction === 'asc' ? a.number - b.number : b.number - a.number;
-        }
-        if (sortConfig.key === 'name') {
-           return sortConfig.direction === 'asc' ? a.kana.localeCompare(b.kana, 'ja') : b.kana.localeCompare(a.kana, 'ja');
-        }
+        if (sortConfig.key === 'number') { return sortConfig.direction === 'asc' ? a.number - b.number : b.number - a.number; }
+        if (sortConfig.key === 'name') { return sortConfig.direction === 'asc' ? a.kana.localeCompare(b.kana, 'ja') : b.kana.localeCompare(a.kana, 'ja'); }
         
         const dA = studentDetails[a.id] || {};
         const dB = studentDetails[b.id] || {};
-        
         const valA = dA[sortConfig.key] || '';
         const valB = dB[sortConfig.key] || '';
         
@@ -1060,7 +1342,6 @@
             if (s.includes(',') || s.includes('"') || s.includes('\n')) return `"${s}"`;
             return s;
           };
-          
           const row = [
             student.number, student.name, escapeCSV(d.scholarship), escapeCSV(d.club), escapeCSV(d.committee), escapeCSV(d.event_role), 
             escapeCSV(d.course_kokugo), escapeCSV(d.course_sugaku), escapeCSV(d.course_eigo), escapeCSV(d.strong_subject), 
@@ -1097,7 +1378,6 @@
             }
             result.push(current); return result;
           };
-
           const lines = e.target.result.split(/\r\n|\n/);
           const newStudentDetails = { ...studentDetails };
           let updatedCount = 0;
@@ -1129,11 +1409,9 @@
           <header className="mb-8 flex justify-between items-end flex-wrap gap-4">
             <div>
               <h2 className="text-2xl font-bold text-slate-800">生徒詳細情報管理</h2>
-              <p className="text-slate-500 mt-2">部活や進路希望などの情報を一括でダウンロード・アップロードします。各項目をタップして並び替えられます。</p>
+              <p className="text-slate-500 mt-2">部活や進路希望などの情報を一括でダウンロード・アップロードします。</p>
             </div>
-            <button onClick={resetSort} className="flex items-center gap-1 px-3 py-1.5 bg-slate-100 text-slate-600 rounded-lg text-xs font-bold hover:bg-slate-200 transition-colors">
-              <Icon name="RotateCcw" size={14} /> 元の順番に戻る
-            </button>
+            <button onClick={resetSort} className="flex items-center gap-1 px-3 py-1.5 bg-slate-100 text-slate-600 rounded-lg text-xs font-bold hover:bg-slate-200 transition-colors"><Icon name="RotateCcw" size={14} /> 元の順番に戻る</button>
           </header>
           <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
             <div className="flex flex-wrap gap-6 items-end justify-between border-b border-slate-100 pb-6 mb-6">
@@ -1171,20 +1449,11 @@
                     <td className="p-3 text-center border-r border-slate-200 font-bold text-slate-500 sticky left-0 z-10 bg-white group-hover:bg-slate-50">{student.number}</td>
                     <td className="p-3 border-r border-slate-200 font-bold text-slate-800 sticky left-[48px] z-10 bg-white group-hover:bg-slate-50">{student.name}</td>
                     <td className="p-3 text-center border-r border-slate-200 font-bold text-amber-600">{d.scholarship||'-'}</td>
-                    <td className="p-3 truncate">{d.club||'-'}</td>
-                    <td className="p-3 truncate">{d.committee||'-'}</td>
-                    <td className="p-3 truncate">{d.event_role||'-'}</td>
-                    <td className="p-3 truncate">{d.course_kokugo||'-'}</td>
-                    <td className="p-3 truncate">{d.course_sugaku||'-'}</td>
-                    <td className="p-3 truncate">{d.course_eigo||'-'}</td>
-                    <td className="p-3 truncate">{d.strong_subject||'-'}</td>
-                    <td className="p-3 truncate">{d.weak_subject||'-'}</td>
-                    <td className="p-3 truncate">{d.dream||'-'}</td>
-                    <td className="p-3 truncate">{d.university||'-'}</td>
-                    <td className="p-3 truncate">{d.friends||'-'}</td>
-                    <td className="p-3 truncate">{d.good_points||'-'}</td>
-                    <td className="p-3 truncate">{d.areas_to_improve||'-'}</td>
-                    <td className="p-3 truncate">{d.others||'-'}</td>
+                    <td className="p-3 truncate">{d.club||'-'}</td><td className="p-3 truncate">{d.committee||'-'}</td><td className="p-3 truncate">{d.event_role||'-'}</td>
+                    <td className="p-3 truncate">{d.course_kokugo||'-'}</td><td className="p-3 truncate">{d.course_sugaku||'-'}</td><td className="p-3 truncate">{d.course_eigo||'-'}</td>
+                    <td className="p-3 truncate">{d.strong_subject||'-'}</td><td className="p-3 truncate">{d.weak_subject||'-'}</td><td className="p-3 truncate">{d.dream||'-'}</td>
+                    <td className="p-3 truncate">{d.university||'-'}</td><td className="p-3 truncate">{d.friends||'-'}</td><td className="p-3 truncate">{d.good_points||'-'}</td>
+                    <td className="p-3 truncate">{d.areas_to_improve||'-'}</td><td className="p-3 truncate">{d.others||'-'}</td>
                   </tr>
                 })}
               </tbody></table>
@@ -1201,30 +1470,20 @@
 
       const handleSort = (key) => {
         let direction = 'desc';
-        if (sortConfig.key === key && sortConfig.direction === 'desc') {
-          direction = 'asc';
-        }
+        if (sortConfig.key === key && sortConfig.direction === 'desc') { direction = 'asc'; }
         setSortConfig({ key, direction });
       };
 
-      const resetSort = () => {
-        setSortConfig({ key: 'number', direction: 'asc' });
-      };
+      const resetSort = () => { setSortConfig({ key: 'number', direction: 'asc' }); };
 
       const sortedStudents = [...students].sort((a, b) => {
-        if (sortConfig.key === 'number') {
-          return sortConfig.direction === 'asc' ? a.number - b.number : b.number - a.number;
-        }
-        if (sortConfig.key === 'name') {
-           return sortConfig.direction === 'asc' ? a.kana.localeCompare(b.kana, 'ja') : b.kana.localeCompare(a.kana, 'ja');
-        }
+        if (sortConfig.key === 'number') return sortConfig.direction === 'asc' ? a.number - b.number : b.number - a.number;
+        if (sortConfig.key === 'name') return sortConfig.direction === 'asc' ? a.kana.localeCompare(b.kana, 'ja') : b.kana.localeCompare(a.kana, 'ja');
         
         const gA = grades[selectedTerm]?.[a.id] || {};
         const gB = grades[selectedTerm]?.[b.id] || {};
-        
         const valA = gA[sortConfig.key];
         const valB = gB[sortConfig.key];
-        
         const numA = valA === '' || valA === undefined || valA === '-' ? -Infinity : Number(valA);
         const numB = valB === '' || valB === undefined || valB === '-' ? -Infinity : Number(valB);
 
@@ -1284,9 +1543,7 @@
         <div className="max-w-6xl mx-auto">
           <header className="mb-8 flex justify-between items-end">
             <h2 className="text-2xl font-bold text-slate-800">定期考査 成績管理</h2>
-            <button onClick={resetSort} className="flex items-center gap-1 px-3 py-1.5 bg-slate-100 text-slate-600 rounded-lg text-xs font-bold hover:bg-slate-200 transition-colors">
-              <Icon name="RotateCcw" size={14} /> 元の順番に戻る
-            </button>
+            <button onClick={resetSort} className="flex items-center gap-1 px-3 py-1.5 bg-slate-100 text-slate-600 rounded-lg text-xs font-bold hover:bg-slate-200 transition-colors"><Icon name="RotateCcw" size={14} /> 元の順番に戻る</button>
           </header>
           <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
             <div className="flex flex-wrap gap-6 items-end justify-between border-b border-slate-100 pb-6 mb-6">
@@ -1342,30 +1599,20 @@
 
       const handleSort = (key) => {
         let direction = 'desc';
-        if (sortConfig.key === key && sortConfig.direction === 'desc') {
-          direction = 'asc';
-        }
+        if (sortConfig.key === key && sortConfig.direction === 'desc') { direction = 'asc'; }
         setSortConfig({ key, direction });
       };
 
-      const resetSort = () => {
-        setSortConfig({ key: 'number', direction: 'asc' });
-      };
+      const resetSort = () => { setSortConfig({ key: 'number', direction: 'asc' }); };
 
       const sortedStudents = [...students].sort((a, b) => {
-        if (sortConfig.key === 'number') {
-          return sortConfig.direction === 'asc' ? a.number - b.number : b.number - a.number;
-        }
-        if (sortConfig.key === 'name') {
-           return sortConfig.direction === 'asc' ? a.kana.localeCompare(b.kana, 'ja') : b.kana.localeCompare(a.kana, 'ja');
-        }
+        if (sortConfig.key === 'number') return sortConfig.direction === 'asc' ? a.number - b.number : b.number - a.number;
+        if (sortConfig.key === 'name') return sortConfig.direction === 'asc' ? a.kana.localeCompare(b.kana, 'ja') : b.kana.localeCompare(a.kana, 'ja');
         
         const gA = mockGrades[selectedMock]?.[a.id] || {};
         const gB = mockGrades[selectedMock]?.[b.id] || {};
-        
         const valA = gA[sortConfig.key];
         const valB = gB[sortConfig.key];
-        
         const numA = valA === '' || valA === undefined || valA === '-' ? -Infinity : Number(valA);
         const numB = valB === '' || valB === undefined || valB === '-' ? -Infinity : Number(valB);
 
@@ -1425,9 +1672,7 @@
         <div className="max-w-6xl mx-auto">
           <header className="mb-8 flex justify-between items-end">
             <h2 className="text-2xl font-bold text-slate-800">模試成績 (学力推移調査)</h2>
-            <button onClick={resetSort} className="flex items-center gap-1 px-3 py-1.5 bg-slate-100 text-slate-600 rounded-lg text-xs font-bold hover:bg-slate-200 transition-colors">
-              <Icon name="RotateCcw" size={14} /> 元の順番に戻る
-            </button>
+            <button onClick={resetSort} className="flex items-center gap-1 px-3 py-1.5 bg-slate-100 text-slate-600 rounded-lg text-xs font-bold hover:bg-slate-200 transition-colors"><Icon name="RotateCcw" size={14} /> 元の順番に戻る</button>
           </header>
           <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
             <div className="flex flex-wrap gap-6 items-end justify-between border-b border-slate-100 pb-6 mb-6">
