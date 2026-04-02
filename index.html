@@ -4,11 +4,19 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>2年A組 クラスノート</title>
+  
+  <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- React & ReactDOM -->
   <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  
+  <!-- Babel -->
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
   <style>
+    /* 印刷時のスタイル調整 */
     @media print {
       @page { margin: 10mm; }
       body { -webkit-print-color-adjust: exact; print-color-adjust: exact; font-size: 10px; line-height: 1.3; }
@@ -48,6 +56,7 @@
   <script type="text/babel" data-type="module">
     const { useState, useEffect, useRef, useCallback } = React;
 
+    // === SVG Icons Component ===
     const Icon = ({ name, size = 24, className = "" }) => {
       const icons = {
         Users: <><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></>,
@@ -84,7 +93,8 @@
         Lightbulb: <><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.9 1.2 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/></>,
         CheckSquare: <><rect width="18" height="18" x="3" y="3" rx="2"/><path d="m9 12 2 2 4-4"/></>,
         Star: <><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></>,
-        Trash2: <><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></>
+        Trash2: <><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></>,
+        X: <><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></>
       };
       return (
         <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
@@ -93,6 +103,7 @@
       );
     };
 
+    // === 初期データ ===
     const INITIAL_STUDENTS = [
       { id: 1, number: 1, name: '荒牧 湊', kana: 'アラマキ ミナト', gender: 'M' },
       { id: 2, number: 2, name: '石橋 新汰', kana: 'イシバシ アラタ', gender: 'M' },
@@ -185,6 +196,10 @@
       const [selectedIncidentId, setSelectedIncidentId] = useState(null);
       const [isPrintingIncident, setIsPrintingIncident] = useState(false);
       const [printingIncidentId, setPrintingIncidentId] = useState(null);
+
+      // クラスの出来事 編集用State
+      const [editingEventId, setEditingEventId] = useState(null);
+      const [editingEventData, setEditingEventData] = useState(null);
       
       const [hasInitialLoaded, setHasInitialLoaded] = useState(false);
       const isRestoringRef = useRef(false);
@@ -342,7 +357,6 @@
         return () => clearTimeout(timer);
       }, [records, events, goals, grades, mockGrades, studentDetails, ideas, todos, incidents, isCloudReady, hasInitialLoaded]);
 
-
       const handlePushCloud = async () => {
         if (!isCloudReady) return showToast("エラー: Sync IDを入力してください。");
         try {
@@ -378,24 +392,63 @@
         } catch (e) { showToast("読み込みに失敗しました。"); }
       };
 
-      const handleAddRecord = (studentId, record) => {
+      // == Individual Save Handlers with Edit support ==
+      const handleSaveRecord = (studentId, record, recordId = null) => {
         setRecords(prev => {
           const studentRecords = prev[studentId] || [];
-          const newRecords = [{ ...record, id: Date.now() }, ...studentRecords];
+          let newRecords;
+          if (recordId) {
+            newRecords = studentRecords.map(r => r.id === recordId ? { ...record, id: recordId } : r);
+            showToast("記録を更新しました。");
+          } else {
+            newRecords = [{ ...record, id: Date.now() }, ...studentRecords];
+            showToast("記録を追加しました。");
+          }
           newRecords.sort((a, b) => new Date(b.date) - new Date(a.date));
           return { ...prev, [studentId]: newRecords };
         });
-        showToast("記録を追加しました。");
       };
 
-      const handleAddEvent = (event) => {
-        setEvents(prev => [{ ...event, id: Date.now() }, ...prev].sort((a, b) => new Date(b.date) - new Date(a.date)));
-        showToast("出来事を記録しました。");
+      const handleDeleteRecord = (studentId, recordId) => {
+        if (window.confirm("この記録を削除しますか？")) {
+          setRecords(prev => {
+            const studentRecords = prev[studentId] || [];
+            return { ...prev, [studentId]: studentRecords.filter(r => r.id !== recordId) };
+          });
+          showToast("記録を削除しました。");
+        }
       };
 
-      const handleUpdateGoal = (field, value) => {
-        setGoals(prev => ({ ...prev, [field]: value }));
+      const handleSaveClassEvent = (eventData) => {
+        if (editingEventId) {
+          setEvents(prev => prev.map(ev => ev.id === editingEventId ? { ...eventData, id: editingEventId } : ev).sort((a, b) => new Date(b.date) - new Date(a.date)));
+          showToast("出来事を更新しました。");
+        } else {
+          setEvents(prev => [{ ...eventData, id: Date.now() }, ...prev].sort((a, b) => new Date(b.date) - new Date(a.date)));
+          showToast("出来事を記録しました。");
+        }
+        setEditingEventId(null);
+        setEditingEventData(null);
       };
+
+      const handleEditClassEvent = (ev) => {
+        setEditingEventId(ev.id);
+        setEditingEventData({ title: ev.title, date: ev.date, content: ev.content });
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      };
+
+      const handleDeleteClassEvent = (id) => {
+        if (window.confirm("この出来事を削除しますか？")) {
+          setEvents(prev => prev.filter(ev => ev.id !== id));
+          if (editingEventId === id) {
+            setEditingEventId(null);
+            setEditingEventData(null);
+          }
+          showToast("出来事を削除しました。");
+        }
+      };
+
+      const handleUpdateGoal = (field, value) => { setGoals(prev => ({ ...prev, [field]: value })); };
 
       const handleExportBackup = () => {
         const data = { records, events, goals, grades, mockGrades, studentDetails, ideas, todos, incidents };
@@ -434,10 +487,7 @@
       };
 
       useEffect(() => {
-        const handleAfterPrint = () => {
-          setIsPrintingAll(false);
-          setIsPrintingIncident(false);
-        };
+        const handleAfterPrint = () => { setIsPrintingAll(false); setIsPrintingIncident(false); };
         window.addEventListener('afterprint', handleAfterPrint);
         if (isPrintingAll || isPrintingIncident) setTimeout(() => window.print(), 500);
         return () => window.removeEventListener('afterprint', handleAfterPrint);
@@ -505,7 +555,7 @@
                   studentGrades={TEST_TERMS.reduce((acc, term) => { acc[term.id] = grades[term.id]?.[student.id] || null; return acc; }, {})}
                   studentMockGrades={MOCK_EXAMS.reduce((acc, mock) => { acc[mock.id] = mockGrades[mock.id]?.[student.id] || null; return acc; }, {})}
                   details={studentDetails[student.id] || {}}
-                  onUpdateDetails={() => {}} onAddRecord={() => {}} onBack={() => {}} isPrintAllMode={true}
+                  onUpdateDetails={() => {}} onSaveRecord={() => {}} onDeleteRecord={() => {}} onBack={() => {}} isPrintAllMode={true}
                 />
               </div>
             ))}
@@ -520,7 +570,7 @@
               <div>
                 <h1 className="text-xl font-bold text-blue-700 flex items-center gap-2"><Icon name="Users" size={24} className="text-blue-600" />中2A クラスノート</h1>
                 <div className="flex items-center gap-3 mt-2">
-                  <span className="text-[10px] font-mono bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded border border-slate-200">v1.8.0</span>
+                  <span className="text-[10px] font-mono bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded border border-slate-200">v1.8.1</span>
                   {isCloudReady ? (
                     saveStatus === 'saving' ? ( <span className="flex items-center gap-1.5 text-[10px] text-amber-600 font-bold bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200"><Icon name="Loader2" size={10} className="animate-spin" /> 保存中...</span> ) : ( <span className="flex items-center gap-1.5 text-[10px] text-emerald-600 font-bold bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-100"><span className="relative flex h-2 w-2"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span><span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span></span> 自動同期ON</span> )
                   ) : ( <span className="flex items-center gap-1.5 text-[10px] text-slate-400 font-bold bg-slate-50 px-1.5 py-0.5 rounded border border-slate-200"><span className="relative inline-flex rounded-full h-2 w-2 bg-slate-300"></span> 同期OFF</span> )}
@@ -576,7 +626,7 @@
             <div className="md:hidden bg-white border-b border-slate-200 p-4 flex items-center justify-between print:hidden z-10">
               <div className="flex items-center gap-2"><button onClick={() => setIsMobileMenuOpen(true)} className="p-2 -ml-2 text-slate-600 hover:bg-slate-100 rounded-lg"><Icon name="Menu" size={24} /></button><span className="font-bold text-slate-800">中2A クラスノート</span></div>
               <div className="flex items-center gap-2">
-                <span className="text-[10px] font-mono bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded border border-slate-200">v1.8.0</span>
+                <span className="text-[10px] font-mono bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded border border-slate-200">v1.8.1</span>
                 {isCloudReady && ( saveStatus === 'saving' ? ( <span className="flex items-center gap-1 text-[10px] text-amber-600 font-bold bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200"><Icon name="Loader2" size={10} className="animate-spin" /> 保存中</span> ) : ( <span className="relative flex h-2 w-2"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span><span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span></span> ) )}
               </div>
             </div>
@@ -671,7 +721,9 @@
                   studentMockGrades={MOCK_EXAMS.reduce((acc, mock) => { acc[mock.id] = mockGrades[mock.id]?.[selectedStudentId] || null; return acc; }, {})}
                   details={studentDetails[selectedStudentId] || {}}
                   onUpdateDetails={(newDetails) => { setStudentDetails(prev => ({ ...prev, [selectedStudentId]: newDetails })); showToast("生徒詳細情報を更新しました。"); }}
-                  onAddRecord={(record) => handleAddRecord(selectedStudentId, record)} onBack={() => setSelectedStudentId(null)} isPrintAllMode={false}
+                  onSaveRecord={(record, recordId) => handleSaveRecord(selectedStudentId, record, recordId)} 
+                  onDeleteRecord={(recordId) => handleDeleteRecord(selectedStudentId, recordId)}
+                  onBack={() => setSelectedStudentId(null)} isPrintAllMode={false}
                 />
               )}
 
@@ -694,14 +746,26 @@
                     <h2 className="text-2xl font-bold text-slate-800">クラスの出来事</h2>
                     <p className="text-slate-500 mt-2">体育祭や合唱コンクール、日常の大きな出来事を記録します。</p>
                   </header>
-                  <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 mb-8">
-                    <h3 className="text-lg font-bold text-slate-700 mb-4 flex items-center gap-2"><Icon name="Plus" size={20} className="text-blue-600" /> 新しい出来事を記録</h3>
-                    <EventForm onSave={handleAddEvent} />
+                  <div className={`bg-white p-6 rounded-2xl shadow-sm border mb-8 transition-colors ${editingEventId ? 'border-blue-400 ring-2 ring-blue-50' : 'border-slate-200'}`}>
+                    <h3 className="text-lg font-bold text-slate-700 mb-4 flex items-center gap-2">
+                      <Icon name={editingEventId ? "Edit3" : "Plus"} size={20} className="text-blue-600" /> 
+                      {editingEventId ? "出来事を編集" : "新しい出来事を記録"}
+                    </h3>
+                    <EventForm 
+                      initialData={editingEventData} 
+                      onSave={handleSaveClassEvent} 
+                      isEditing={!!editingEventId}
+                      onCancel={() => { setEditingEventId(null); setEditingEventData(null); }}
+                    />
                   </div>
                   <div className="space-y-6">
                     {events.length > 0 ? events.map(event => (
-                      <div key={event.id} className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-                        <div className="flex justify-between items-center mb-4 gap-4">
+                      <div key={event.id} className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 group relative hover:shadow-md transition-shadow">
+                        <div className="absolute top-4 right-4 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity print:hidden">
+                          <button onClick={() => handleEditClassEvent(event)} className="text-slate-400 hover:text-blue-600 bg-white rounded-full p-1.5 shadow-sm border border-slate-100"><Icon name="Edit3" size={16} /></button>
+                          <button onClick={() => handleDeleteClassEvent(event.id)} className="text-slate-400 hover:text-red-500 bg-white rounded-full p-1.5 shadow-sm border border-slate-100"><Icon name="Trash2" size={16} /></button>
+                        </div>
+                        <div className="flex justify-between items-center mb-4 gap-4 pr-16">
                           <h4 className="text-xl font-bold text-slate-800">{event.title}</h4>
                           <span className="bg-slate-100 text-slate-600 px-4 py-1.5 rounded-full text-sm font-medium border border-slate-200 flex items-center gap-2"><Icon name="Calendar" size={14} /> {event.date}</span>
                         </div>
@@ -730,14 +794,22 @@
 
     function IncidentsView({ incidents, setIncidents, students, onSelectIncident, showToast }) {
       const [newIncident, setNewIncident] = useState({ title: '', date: new Date().toISOString().split('T')[0], involvedStudents: [] });
+      const [editingId, setEditingId] = useState(null);
 
-      const handleAddIncident = (e) => {
+      const handleSaveIncident = (e) => {
         e.preventDefault();
         if (!newIncident.title.trim()) return;
-        const incident = { ...newIncident, id: Date.now(), status: 'active', events: [] };
-        setIncidents(prev => [incident, ...prev].sort((a,b) => new Date(b.date) - new Date(a.date)));
+        
+        if (editingId) {
+          setIncidents(prev => prev.map(inc => inc.id === editingId ? { ...inc, ...newIncident } : inc).sort((a,b) => new Date(b.date) - new Date(a.date)));
+          setEditingId(null);
+          showToast("事案を更新しました。");
+        } else {
+          const incident = { ...newIncident, id: Date.now(), status: 'active', events: [] };
+          setIncidents(prev => [incident, ...prev].sort((a,b) => new Date(b.date) - new Date(a.date)));
+          showToast("新しい事案を登録しました。");
+        }
         setNewIncident({ title: '', date: new Date().toISOString().split('T')[0], involvedStudents: [] });
-        showToast("新しい事案を登録しました。");
       };
 
       const handleStudentToggle = (studentId) => {
@@ -748,15 +820,37 @@
         });
       };
 
+      const handleEdit = (inc, e) => {
+        e.stopPropagation();
+        setNewIncident({ title: inc.title, date: inc.date, involvedStudents: inc.involvedStudents || [] });
+        setEditingId(inc.id);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      };
+
+      const handleDelete = (id, e) => {
+        e.stopPropagation();
+        if (window.confirm("この事案を削除しますか？\n（関連する対応記録もすべて削除されます）")) {
+          setIncidents(prev => prev.filter(inc => inc.id !== id));
+          if (editingId === id) {
+            setEditingId(null);
+            setNewIncident({ title: '', date: new Date().toISOString().split('T')[0], involvedStudents: [] });
+          }
+          showToast("事案を削除しました。");
+        }
+      };
+
       return (
         <div className="max-w-4xl mx-auto animate-in fade-in duration-300">
           <header className="mb-8">
             <h2 className="text-2xl font-bold text-slate-800">生徒・保護者対応</h2>
             <p className="text-slate-500 mt-2">発生したトラブルや対応事案ごとに、関わった生徒と時系列の対応記録を管理します。</p>
           </header>
-          <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 mb-8">
-            <h3 className="text-lg font-bold text-slate-700 mb-4 flex items-center gap-2"><Icon name="Plus" size={20} className="text-blue-600" /> 新しい事案を登録</h3>
-            <form onSubmit={handleAddIncident} className="space-y-4">
+          <div className={`bg-white p-6 rounded-2xl shadow-sm border mb-8 transition-colors ${editingId ? 'border-blue-400 ring-2 ring-blue-50' : 'border-slate-200'}`}>
+            <h3 className="text-lg font-bold text-slate-700 mb-4 flex items-center gap-2">
+              <Icon name={editingId ? "Edit3" : "Plus"} size={20} className="text-blue-600" /> 
+              {editingId ? "事案情報を編集" : "新しい事案を登録"}
+            </h3>
+            <form onSubmit={handleSaveIncident} className="space-y-4">
               <div className="flex flex-wrap gap-4">
                 <div className="flex-[2] min-w-[200px]">
                   <label className="block text-xs font-bold text-slate-500 mb-1">件名 (トラブルの概要)</label>
@@ -778,15 +872,22 @@
                   ))}
                 </div>
               </div>
-              <div className="flex justify-end pt-2">
-                <button type="submit" className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-xl font-bold text-sm hover:bg-blue-700 shadow-sm transition-all"><Icon name="Save" size={18} /> 事案を登録</button>
+              <div className="flex justify-end gap-2 pt-2">
+                {editingId && (
+                  <button type="button" onClick={() => { setEditingId(null); setNewIncident({ title: '', date: new Date().toISOString().split('T')[0], involvedStudents: [] }); }} className="flex items-center gap-2 px-4 py-3 bg-slate-100 text-slate-600 rounded-xl font-bold text-sm hover:bg-slate-200"><Icon name="X" size={18} /> キャンセル</button>
+                )}
+                <button type="submit" className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-xl font-bold text-sm hover:bg-blue-700 shadow-sm transition-all"><Icon name="Save" size={18} /> {editingId ? "更新する" : "事案を登録"}</button>
               </div>
             </form>
           </div>
           <div className="space-y-4">
             {incidents.length > 0 ? incidents.map(incident => (
-              <div key={incident.id} onClick={() => onSelectIncident(incident.id)} className={`bg-white p-5 rounded-2xl border ${incident.status === 'active' ? 'border-amber-300 shadow-md ring-1 ring-amber-100' : 'border-slate-200 shadow-sm'} cursor-pointer hover:border-blue-400 transition-all group`}>
-                <div className="flex justify-between items-start mb-3 gap-4">
+              <div key={incident.id} onClick={() => onSelectIncident(incident.id)} className={`bg-white p-5 rounded-2xl border ${incident.status === 'active' ? 'border-amber-300 shadow-md ring-1 ring-amber-100' : 'border-slate-200 shadow-sm'} cursor-pointer hover:border-blue-400 transition-all group relative`}>
+                <div className="absolute top-4 right-12 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button onClick={(e) => handleEdit(incident, e)} className="text-slate-400 hover:text-blue-600 bg-white rounded-full p-1.5 shadow-sm border border-slate-100"><Icon name="Edit3" size={16} /></button>
+                  <button onClick={(e) => handleDelete(incident.id, e)} className="text-slate-400 hover:text-red-500 bg-white rounded-full p-1.5 shadow-sm border border-slate-100"><Icon name="Trash2" size={16} /></button>
+                </div>
+                <div className="flex justify-between items-start mb-3 gap-4 pr-20">
                   <div className="flex items-center gap-3">
                     {incident.status === 'active' ? (
                       <span className="bg-amber-100 text-amber-700 px-2.5 py-1 rounded-md text-xs font-bold flex items-center gap-1 border border-amber-200"><Icon name="AlertTriangle" size={12} /> 対応中</span>
@@ -795,9 +896,9 @@
                     )}
                     <span className="text-sm font-bold text-slate-400">{incident.date}</span>
                   </div>
-                  <Icon name="ChevronRight" size={20} className="text-slate-300 group-hover:text-blue-500 transition-colors" />
+                  <Icon name="ChevronRight" size={20} className="text-slate-300 group-hover:text-blue-500 transition-colors absolute right-4 top-5" />
                 </div>
-                <h4 className={`text-lg font-bold ${incident.status === 'active' ? 'text-slate-800' : 'text-slate-600'} mb-3`}>{incident.title}</h4>
+                <h4 className={`text-lg font-bold ${incident.status === 'active' ? 'text-slate-800' : 'text-slate-600'} mb-3 pr-8`}>{incident.title}</h4>
                 <div className="flex flex-wrap gap-1.5">
                   {incident.involvedStudents.map(id => {
                     const st = students.find(s => s.id === id);
@@ -818,17 +919,47 @@
 
     function IncidentDetail({ incident, students, setIncidents, onBack, onPrint, showToast }) {
       const [newEvent, setNewEvent] = useState({ datetime: new Date().toISOString().slice(0, 16), type: INCIDENT_EVENT_TYPES[0], content: '' });
+      const [editingEventId, setEditingEventId] = useState(null);
 
-      const handleAddEvent = (e) => {
+      const handleSaveEvent = (e) => {
         e.preventDefault();
         if (!newEvent.content.trim()) return;
-        const ev = { ...newEvent, id: Date.now() };
-        setIncidents(prev => prev.map(inc => {
-          if (inc.id === incident.id) { return { ...inc, events: [...(inc.events || []), ev] }; }
-          return inc;
-        }));
+        
+        if (editingEventId) {
+          setIncidents(prev => prev.map(inc => {
+            if (inc.id === incident.id) {
+              return { ...inc, events: inc.events.map(ev => ev.id === editingEventId ? { ...ev, ...newEvent } : ev) };
+            }
+            return inc;
+          }));
+          setEditingEventId(null);
+          showToast("対応記録を更新しました。");
+        } else {
+          const ev = { ...newEvent, id: Date.now() };
+          setIncidents(prev => prev.map(inc => {
+            if (inc.id === incident.id) { return { ...inc, events: [...(inc.events || []), ev] }; }
+            return inc;
+          }));
+          showToast("対応記録を追加しました。");
+        }
         setNewEvent({ datetime: new Date().toISOString().slice(0, 16), type: INCIDENT_EVENT_TYPES[0], content: '' });
-        showToast("対応記録を追加しました。");
+      };
+
+      const handleEditEvent = (ev) => {
+        setNewEvent({ datetime: ev.datetime, type: ev.type, content: ev.content });
+        setEditingEventId(ev.id);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      };
+
+      const handleDeleteEvent = (id) => {
+        if (window.confirm("この対応記録を削除しますか？")) {
+          setIncidents(prev => prev.map(inc => inc.id === incident.id ? { ...inc, events: inc.events.filter(e => e.id !== id) } : inc));
+          if (editingEventId === id) {
+            setEditingEventId(null);
+            setNewEvent({ datetime: new Date().toISOString().slice(0, 16), type: INCIDENT_EVENT_TYPES[0], content: '' });
+          }
+          showToast("対応記録を削除しました。");
+        }
       };
 
       const toggleStatus = () => {
@@ -868,9 +999,12 @@
               </div>
             </div>
           </div>
-          <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 mb-8">
-            <h3 className="text-lg font-bold text-slate-700 mb-4 flex items-center gap-2"><Icon name="Plus" size={20} className="text-blue-600" /> 新しい対応を記録</h3>
-            <form onSubmit={handleAddEvent} className="space-y-4">
+          <div className={`bg-white p-6 rounded-2xl shadow-sm border mb-8 transition-colors ${editingEventId ? 'border-blue-400 ring-2 ring-blue-50' : 'border-slate-200'}`}>
+            <h3 className="text-lg font-bold text-slate-700 mb-4 flex items-center gap-2">
+              <Icon name={editingEventId ? "Edit3" : "Plus"} size={20} className="text-blue-600" /> 
+              {editingEventId ? "対応記録を編集" : "新しい対応を記録"}
+            </h3>
+            <form onSubmit={handleSaveEvent} className="space-y-4">
               <div className="flex gap-4">
                 <div className="flex-[2] min-w-[200px]">
                   <label className="block text-sm font-bold text-slate-600 mb-1">日時</label>
@@ -887,8 +1021,11 @@
                 <label className="block text-sm font-bold text-slate-600 mb-1">内容</label>
                 <textarea required placeholder="誰とどのような話をしたか、どのような対応をしたかを記録..." className="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 min-h-[120px] resize-y" value={newEvent.content} onChange={e => setNewEvent({...newEvent, content: e.target.value})} />
               </div>
-              <div className="flex justify-end">
-                <button type="submit" className="flex items-center gap-2 px-6 py-3 bg-slate-800 text-white rounded-xl font-bold text-sm hover:bg-slate-700 shadow-sm"><Icon name="Save" size={18} /> 記録を保存</button>
+              <div className="flex justify-end gap-2">
+                {editingEventId && (
+                  <button type="button" onClick={() => { setEditingEventId(null); setNewEvent({ datetime: new Date().toISOString().slice(0, 16), type: INCIDENT_EVENT_TYPES[0], content: '' }); }} className="flex items-center gap-2 px-4 py-3 bg-slate-100 text-slate-600 rounded-xl font-bold text-sm hover:bg-slate-200"><Icon name="X" size={18} /> キャンセル</button>
+                )}
+                <button type="submit" className="flex items-center gap-2 px-6 py-3 bg-slate-800 text-white rounded-xl font-bold text-sm hover:bg-slate-700 shadow-sm"><Icon name="Save" size={18} /> {editingEventId ? "更新する" : "記録を保存"}</button>
               </div>
             </form>
           </div>
@@ -902,8 +1039,12 @@
                   return (
                     <div key={ev.id} className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active">
                       <div className="flex items-center justify-center w-10 h-10 rounded-full border-4 border-white bg-blue-500 text-white shadow shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 z-10"><Icon name="MessageCircle" size={16} /></div>
-                      <div className="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
-                        <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+                      <div className="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] bg-white p-5 rounded-2xl shadow-sm border border-slate-200 relative group-hover:shadow-md transition-shadow">
+                        <div className="absolute top-3 right-3 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity print:hidden">
+                          <button onClick={() => handleEditEvent(ev)} className="text-slate-400 hover:text-blue-600 bg-slate-50 hover:bg-white rounded-full p-1.5 shadow-sm border border-slate-100"><Icon name="Edit3" size={16} /></button>
+                          <button onClick={() => handleDeleteEvent(ev.id)} className="text-slate-400 hover:text-red-500 bg-slate-50 hover:bg-white rounded-full p-1.5 shadow-sm border border-slate-100"><Icon name="Trash2" size={16} /></button>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-2 mb-3 pr-14">
                           <span className="font-bold text-slate-500 text-xs">{formattedDate}</span>
                           <span className="bg-slate-100 text-slate-600 px-2.5 py-1 rounded text-xs font-bold border border-slate-200">{ev.type}</span>
                         </div>
@@ -921,19 +1062,40 @@
 
     function IdeasView({ ideas, setIdeas, showToast }) {
       const [newIdea, setNewIdea] = useState({ type: 'my_idea', content: '' });
+      const [editingId, setEditingId] = useState(null);
       const [sortBy, setSortBy] = useState('date_desc');
 
-      const handleAddIdea = (e) => {
+      const handleSaveIdea = (e) => {
         e.preventDefault();
         if (!newIdea.content.trim()) return;
-        const idea = { ...newIdea, id: Date.now(), createdAt: Date.now(), dateStr: new Date().toISOString().split('T')[0] };
-        setIdeas(prev => [idea, ...prev]);
+        
+        if (editingId) {
+          setIdeas(prev => prev.map(i => i.id === editingId ? { ...i, ...newIdea } : i));
+          setEditingId(null);
+          showToast("アイデアを更新しました。");
+        } else {
+          const idea = { ...newIdea, id: Date.now(), createdAt: Date.now(), dateStr: new Date().toISOString().split('T')[0] };
+          setIdeas(prev => [idea, ...prev]);
+          showToast("アイデアを記録しました。");
+        }
         setNewIdea({ type: 'my_idea', content: '' });
-        showToast("アイデアを記録しました。");
+      };
+
+      const handleEdit = (idea) => {
+        setNewIdea({ type: idea.type, content: idea.content });
+        setEditingId(idea.id);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
       };
 
       const handleDeleteIdea = (id) => {
-        if(window.confirm("このアイデアを削除しますか？")) { setIdeas(prev => prev.filter(i => i.id !== id)); }
+        if(window.confirm("このアイデアを削除しますか？")) { 
+          setIdeas(prev => prev.filter(i => i.id !== id)); 
+          if (editingId === id) {
+            setEditingId(null);
+            setNewIdea({ type: 'my_idea', content: '' });
+          }
+          showToast("アイデアを削除しました。");
+        }
       };
 
       const sortedIdeas = [...ideas].sort((a, b) => {
@@ -960,9 +1122,12 @@
               </select>
             </div>
           </header>
-          <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 mb-8">
-            <h3 className="text-lg font-bold text-slate-700 mb-4 flex items-center gap-2"><Icon name="Lightbulb" size={20} className="text-amber-500" /> 新しいアイデアをストック</h3>
-            <form onSubmit={handleAddIdea} className="space-y-4">
+          <div className={`bg-white p-6 rounded-2xl shadow-sm border mb-8 transition-colors ${editingId ? 'border-blue-400 ring-2 ring-blue-50' : 'border-slate-200'}`}>
+            <h3 className="text-lg font-bold text-slate-700 mb-4 flex items-center gap-2">
+              <Icon name={editingId ? "Edit3" : "Lightbulb"} size={20} className="text-amber-500" /> 
+              {editingId ? "アイデアを編集" : "新しいアイデアをストック"}
+            </h3>
+            <form onSubmit={handleSaveIdea} className="space-y-4">
               <div>
                 <label className="block text-sm font-bold text-slate-600 mb-2">種類</label>
                 <div className="flex flex-wrap gap-3">
@@ -978,8 +1143,11 @@
                 <label className="block text-sm font-bold text-slate-600 mb-1">内容</label>
                 <textarea required placeholder="思いついたことや、メモしておきたい言葉を入力..." className="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 min-h-[120px]" value={newIdea.content} onChange={e => setNewIdea({...newIdea, content: e.target.value})} />
               </div>
-              <div className="flex justify-end">
-                <button type="submit" className="flex items-center gap-2 px-6 py-3 bg-slate-800 text-white rounded-xl font-bold text-sm hover:bg-slate-700 shadow-sm"><Icon name="Save" size={18} /> アイデアを保存</button>
+              <div className="flex justify-end gap-2">
+                {editingId && (
+                  <button type="button" onClick={() => { setEditingId(null); setNewIdea({ type: 'my_idea', content: '' }); }} className="flex items-center gap-2 px-4 py-3 bg-slate-100 text-slate-600 rounded-xl font-bold text-sm hover:bg-slate-200"><Icon name="X" size={18} /> キャンセル</button>
+                )}
+                <button type="submit" className="flex items-center gap-2 px-6 py-3 bg-slate-800 text-white rounded-xl font-bold text-sm hover:bg-slate-700 shadow-sm"><Icon name="Save" size={18} /> {editingId ? "更新する" : "アイデアを保存"}</button>
               </div>
             </form>
           </div>
@@ -988,9 +1156,12 @@
               const typeInfo = IDEA_TYPES[idea.type] || IDEA_TYPES.others;
               return (
                 <div key={idea.id} className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex flex-col justify-between hover:shadow-md transition-shadow relative group">
-                  <button onClick={() => handleDeleteIdea(idea.id)} className="absolute top-4 right-4 text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity bg-white rounded-full p-1 shadow-sm border border-slate-100"><Icon name="Trash2" size={16} /></button>
+                  <div className="absolute top-4 right-4 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button onClick={() => handleEdit(idea)} className="text-slate-400 hover:text-blue-600 bg-white rounded-full p-1.5 shadow-sm border border-slate-100"><Icon name="Edit3" size={16} /></button>
+                    <button onClick={() => handleDeleteIdea(idea.id)} className="text-slate-400 hover:text-red-500 bg-white rounded-full p-1.5 shadow-sm border border-slate-100"><Icon name="Trash2" size={16} /></button>
+                  </div>
                   <div className="mb-3">
-                    <div className="flex items-center justify-between mb-3 pr-6"><span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold border ${typeInfo.color}`}>{typeInfo.label}</span><span className="text-xs text-slate-400 font-bold bg-slate-100 px-2 py-0.5 rounded">{idea.dateStr}</span></div>
+                    <div className="flex items-center justify-between mb-3 pr-16"><span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold border ${typeInfo.color}`}>{typeInfo.label}</span><span className="text-xs text-slate-400 font-bold bg-slate-100 px-2 py-0.5 rounded">{idea.dateStr}</span></div>
                     <p className="whitespace-pre-wrap text-slate-700 text-sm leading-relaxed">{idea.content}</p>
                   </div>
                 </div>
@@ -1008,19 +1179,42 @@
 
     function TodosView({ todos, setTodos, showToast }) {
       const [newTodo, setNewTodo] = useState({ title: '', detail: '', date: new Date().toISOString().split('T')[0], isImportant: false });
+      const [editingId, setEditingId] = useState(null);
 
-      const handleAddTodo = (e) => {
+      const handleSaveTodo = (e) => {
         e.preventDefault();
         if (!newTodo.title.trim()) return;
-        const todo = { ...newTodo, id: Date.now(), createdAt: Date.now(), isCompleted: false };
-        setTodos(prev => [todo, ...prev]);
+        
+        if (editingId) {
+          setTodos(prev => prev.map(t => t.id === editingId ? { ...t, ...newTodo } : t));
+          setEditingId(null);
+          showToast("タスクを更新しました。");
+        } else {
+          const todo = { ...newTodo, id: Date.now(), createdAt: Date.now(), isCompleted: false };
+          setTodos(prev => [todo, ...prev]);
+          showToast("タスクを追加しました。");
+        }
         setNewTodo({ title: '', detail: '', date: new Date().toISOString().split('T')[0], isImportant: false });
-        showToast("タスクを追加しました。");
+      };
+
+      const handleEdit = (todo) => {
+        setNewTodo({ title: todo.title, detail: todo.detail || '', date: todo.date, isImportant: todo.isImportant });
+        setEditingId(todo.id);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
       };
 
       const handleToggleComplete = (id) => { setTodos(prev => prev.map(t => t.id === id ? { ...t, isCompleted: !t.isCompleted } : t)); };
       const handleToggleImportant = (id) => { setTodos(prev => prev.map(t => t.id === id ? { ...t, isImportant: !t.isImportant } : t)); };
-      const handleDeleteTodo = (id) => { if(window.confirm("このタスクを削除しますか？")) { setTodos(prev => prev.filter(t => t.id !== id)); } };
+      
+      const handleDeleteTodo = (id) => { 
+        if(window.confirm("このタスクを削除しますか？")) { 
+          setTodos(prev => prev.filter(t => t.id !== id)); 
+          if (editingId === id) {
+            setEditingId(null);
+            setNewTodo({ title: '', detail: '', date: new Date().toISOString().split('T')[0], isImportant: false });
+          }
+        } 
+      };
 
       const activeTodos = todos.filter(t => !t.isCompleted);
       const completedTodos = todos.filter(t => t.isCompleted);
@@ -1040,11 +1234,12 @@
             <h2 className="text-2xl font-bold text-slate-800">ToDoリスト</h2>
             <p className="text-slate-500 mt-2">タスクを管理します。「重要☆」にチェックを入れたタスクや、日付が新しいものが自動的に上に表示されます。</p>
           </header>
-          <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 mb-8">
-            <form onSubmit={handleAddTodo} className="space-y-4">
+          <div className={`bg-white p-6 rounded-2xl shadow-sm border mb-8 transition-colors ${editingId ? 'border-blue-400 ring-2 ring-blue-50' : 'border-slate-200'}`}>
+            {editingId && <h3 className="text-lg font-bold text-slate-700 mb-4 flex items-center gap-2"><Icon name="Edit3" size={20} className="text-blue-600" /> タスクを編集</h3>}
+            <form onSubmit={handleSaveTodo} className="space-y-4">
               <div className="flex flex-wrap gap-4">
                 <div className="flex-[2] min-w-[200px]">
-                  <label className="block text-xs font-bold text-slate-500 mb-1">新しいタスク</label>
+                  <label className="block text-xs font-bold text-slate-500 mb-1">タスク名</label>
                   <input type="text" required placeholder="タスクのタイトル" className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500" value={newTodo.title} onChange={e => setNewTodo({...newTodo, title: e.target.value})} />
                 </div>
                 <div className="flex-1 min-w-[120px]">
@@ -1062,14 +1257,19 @@
                   <input type="checkbox" className="hidden" checked={newTodo.isImportant} onChange={e => setNewTodo({...newTodo, isImportant: e.target.checked})} />
                   <span className={`text-sm font-bold ${newTodo.isImportant ? 'text-amber-600' : 'text-slate-600'}`}>重要☆</span>
                 </label>
-                <button type="submit" className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 text-white rounded-xl font-bold text-sm hover:bg-blue-700 shadow-sm transition-all"><Icon name="Plus" size={18} /> タスクを追加</button>
+                <div className="flex gap-2">
+                  {editingId && (
+                    <button type="button" onClick={() => { setEditingId(null); setNewTodo({ title: '', detail: '', date: new Date().toISOString().split('T')[0], isImportant: false }); }} className="flex items-center gap-2 px-4 py-2.5 bg-slate-100 text-slate-600 rounded-xl font-bold text-sm hover:bg-slate-200"><Icon name="X" size={18} /> キャンセル</button>
+                  )}
+                  <button type="submit" className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 text-white rounded-xl font-bold text-sm hover:bg-blue-700 shadow-sm transition-all"><Icon name={editingId ? "Save" : "Plus"} size={18} /> {editingId ? "更新する" : "タスクを追加"}</button>
+                </div>
               </div>
             </form>
           </div>
           <div className="space-y-4 mb-12">
             <h3 className="text-lg font-bold text-slate-700 flex items-center gap-2 border-b-2 border-slate-100 pb-2">未完了のタスク <span className="bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full text-xs">{activeTodos.length}</span></h3>
             {activeTodos.length > 0 ? activeTodos.map(todo => (
-              <div key={todo.id} className={`bg-white p-4 rounded-xl border ${todo.isImportant ? 'border-amber-300 shadow-sm ring-2 ring-amber-100/50' : 'border-slate-200'} flex gap-4 items-start group transition-all`}>
+              <div key={todo.id} className={`bg-white p-4 rounded-xl border ${todo.isImportant ? 'border-amber-300 shadow-sm ring-2 ring-amber-100/50' : 'border-slate-200 hover:shadow-md'} flex gap-4 items-start group transition-all`}>
                 <button onClick={() => handleToggleComplete(todo.id)} className="mt-1 flex-shrink-0 w-6 h-6 rounded border-2 border-slate-300 hover:border-emerald-500 hover:bg-emerald-50 flex items-center justify-center text-transparent hover:text-emerald-500 transition-colors bg-slate-50"><Icon name="Check" size={14} /></button>
                 <div className="flex-1">
                   <div className="flex justify-between items-start gap-4">
@@ -1081,7 +1281,10 @@
                   </div>
                   {todo.detail && <p className="mt-2 text-sm text-slate-600 bg-slate-50 p-3 rounded-lg border border-slate-100">{todo.detail}</p>}
                 </div>
-                <button onClick={() => handleDeleteTodo(todo.id)} className="text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity bg-white rounded-full p-1 border border-transparent hover:border-red-100 hover:bg-red-50"><Icon name="Trash2" size={18} /></button>
+                <div className="flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button onClick={() => handleEdit(todo)} className="text-slate-300 hover:text-blue-500 bg-white rounded-full p-1 border border-transparent hover:border-blue-100 hover:bg-blue-50"><Icon name="Edit3" size={18} /></button>
+                  <button onClick={() => handleDeleteTodo(todo.id)} className="text-slate-300 hover:text-red-500 bg-white rounded-full p-1 border border-transparent hover:border-red-100 hover:bg-red-50"><Icon name="Trash2" size={18} /></button>
+                </div>
               </div>
             )) : (
               <div className="text-center py-10 bg-white rounded-xl border border-dashed border-slate-200">
@@ -1097,7 +1300,7 @@
                 {completedTodos.map(todo => (
                   <div key={todo.id} className="bg-slate-50 p-3 rounded-xl border border-slate-200 flex gap-3 items-center group">
                     <button onClick={() => handleToggleComplete(todo.id)} className="flex-shrink-0 w-6 h-6 rounded bg-emerald-500 text-white flex items-center justify-center hover:bg-emerald-600 transition-colors shadow-sm"><Icon name="Check" size={14} /></button>
-                    <div className="flex-1 flex justify-between items-center gap-4">
+                    <div className="flex-1 flex justify-between items-center gap-4 pr-8">
                       <h4 className="font-bold text-slate-500 line-through text-sm truncate">{todo.title}</h4>
                       <span className="text-[10px] font-bold text-slate-400 bg-white border border-slate-200 px-1.5 py-0.5 rounded whitespace-nowrap">{todo.date}</span>
                     </div>
@@ -1111,22 +1314,20 @@
       );
     }
 
-    function NavItem({ icon, label, active, onClick }) {
-      return (
-        <button onClick={onClick} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-sm font-medium ${active ? 'bg-blue-50 text-blue-700 border border-blue-100' : 'text-slate-600 hover:bg-slate-50'}`}>
-          {icon} {label}
-        </button>
-      );
-    }
-
-    function EventForm({ onSave }) {
+    function EventForm({ onSave, initialData, isEditing, onCancel }) {
       const [event, setEvent] = useState({ title: '', date: new Date().toISOString().split('T')[0], content: '' });
+
+      useEffect(() => {
+        if (initialData) setEvent(initialData);
+        else setEvent({ title: '', date: new Date().toISOString().split('T')[0], content: '' });
+      }, [initialData]);
+
       const handleSubmit = (e) => {
         e.preventDefault();
         if (!event.title.trim() || !event.content.trim()) return;
         onSave(event);
-        setEvent({ title: '', date: new Date().toISOString().split('T')[0], content: '' });
       };
+
       return (
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="flex gap-4">
@@ -1143,15 +1344,19 @@
             <label className="block text-sm font-bold text-slate-600 mb-1">振り返り・所感</label>
             <textarea required className="w-full p-4 bg-slate-50 border rounded-xl min-h-[120px]" value={event.content} onChange={e => setEvent({...event, content: e.target.value})} />
           </div>
-          <div className="flex justify-end">
-            <button type="submit" className="flex items-center gap-2 px-6 py-3 bg-slate-800 text-white rounded-xl font-bold text-sm"><Icon name="Save" size={18} /> クラスの記録を保存</button>
+          <div className="flex justify-end gap-2">
+            {isEditing && (
+              <button type="button" onClick={onCancel} className="flex items-center gap-2 px-4 py-3 bg-slate-100 text-slate-600 rounded-xl font-bold text-sm hover:bg-slate-200"><Icon name="X" size={18} /> キャンセル</button>
+            )}
+            <button type="submit" className="flex items-center gap-2 px-6 py-3 bg-slate-800 text-white rounded-xl font-bold text-sm hover:bg-slate-700 shadow-sm"><Icon name="Save" size={18} /> {isEditing ? "更新する" : "クラスの記録を保存"}</button>
           </div>
         </form>
       );
     }
 
-    function StudentDetail({ student, records, studentGrades, studentMockGrades, details, onUpdateDetails, onAddRecord, onBack, isPrintAllMode }) {
+    function StudentDetail({ student, records, studentGrades, studentMockGrades, details, onUpdateDetails, onSaveRecord, onDeleteRecord, onBack, isPrintAllMode }) {
       const [newRecord, setNewRecord] = useState({ date: new Date().toISOString().split('T')[0], type: 'observation', content: '' });
+      const [editingRecordId, setEditingRecordId] = useState(null);
       const [isEditingDetails, setIsEditingDetails] = useState(false);
       const [editDetails, setEditDetails] = useState({});
 
@@ -1160,8 +1365,20 @@
       const handleSubmit = (e) => {
         e.preventDefault();
         if (!newRecord.content.trim()) return;
-        onAddRecord(newRecord);
-        setNewRecord({ ...newRecord, content: '' });
+        onSaveRecord(newRecord, editingRecordId);
+        setNewRecord({ date: new Date().toISOString().split('T')[0], type: 'observation', content: '' });
+        setEditingRecordId(null);
+      };
+
+      const handleEditRecord = (rec) => {
+        setNewRecord({ date: rec.date, type: rec.type, content: rec.content });
+        setEditingRecordId(rec.id);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      };
+
+      const handleCancelEditRecord = () => {
+        setNewRecord({ date: new Date().toISOString().split('T')[0], type: 'observation', content: '' });
+        setEditingRecordId(null);
       };
 
       const handleSaveDetails = () => { onUpdateDetails(editDetails); setIsEditingDetails(false); };
@@ -1192,6 +1409,7 @@
               <button onClick={() => window.print()} className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-xl font-medium text-sm shadow-sm hover:shadow-md transition-all"><Icon name="Printer" size={18} /> この記録をPDF出力</button>
             </div>
           )}
+
           <div className="bg-white p-8 rounded-2xl shadow-sm border border-slate-200 mb-8 print:shadow-none print:border-b-2 print:border-slate-800 print:rounded-none print:px-0 print:py-2 print:mb-4">
             <div className="flex justify-between mb-2 items-end">
               <span className="text-lg font-bold text-slate-400 print:text-xs">出席番号 {student.number}番</span>
@@ -1216,7 +1434,6 @@
                 <button onClick={handleSaveDetails} className="print:hidden flex items-center gap-1 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-bold transition-colors shadow-sm"><Icon name="Check" size={16} /> 保存</button>
               )}
             </div>
-            
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 print:gap-x-4 print:gap-y-1">
               {detailFields.map(field => (
                 <div key={field.key} className="flex flex-col">
@@ -1270,12 +1487,20 @@
           </div>
 
           {!isPrintAllMode && (
-            <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 mb-8 print:hidden">
-              <h3 className="text-lg font-bold text-slate-700 mb-4 flex items-center gap-2"><Icon name="Plus" size={20} className="text-blue-600" /> 新しい記録を追加</h3>
+            <div className={`bg-white p-6 rounded-2xl shadow-sm border mb-8 transition-colors ${editingRecordId ? 'border-blue-400 ring-2 ring-blue-50' : 'border-slate-200'} print:hidden`}>
+              <h3 className="text-lg font-bold text-slate-700 mb-4 flex items-center gap-2">
+                <Icon name={editingRecordId ? "Edit3" : "Plus"} size={20} className="text-blue-600" /> 
+                {editingRecordId ? "記録を編集" : "新しい記録を追加"}
+              </h3>
               <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="flex gap-4"><div className="flex-1"><label className="block text-sm font-bold text-slate-600 mb-1">日付</label><input type="date" required className="w-full p-3 bg-slate-50 border rounded-xl" value={newRecord.date} onChange={e => setNewRecord({...newRecord, date: e.target.value})} /></div><div className="flex-1"><label className="block text-sm font-bold text-slate-600 mb-1">種類</label><select className="w-full p-3 bg-slate-50 border rounded-xl" value={newRecord.type} onChange={e => setNewRecord({...newRecord, type: e.target.value})}>{Object.entries(RECORD_TYPES).map(([k,v]) => <option key={k} value={k}>{v.label}</option>)}</select></div></div>
-                <div><label className="block text-sm font-bold text-slate-600 mb-1">内容</label><textarea required className="w-full p-4 bg-slate-50 border rounded-xl min-h-[120px]" value={newRecord.content} onChange={e => setNewRecord({...newRecord, content: e.target.value})} /></div>
-                <div className="flex justify-end"><button type="submit" className="flex items-center gap-2 px-6 py-3 bg-slate-800 text-white rounded-xl font-bold text-sm"><Icon name="Save" size={18} /> 記録を保存</button></div>
+                <div className="flex gap-4"><div className="flex-1"><label className="block text-sm font-bold text-slate-600 mb-1">日付</label><input type="date" required className="w-full p-3 bg-slate-50 border rounded-xl focus:ring-2 focus:ring-blue-500" value={newRecord.date} onChange={e => setNewRecord({...newRecord, date: e.target.value})} /></div><div className="flex-1"><label className="block text-sm font-bold text-slate-600 mb-1">種類</label><select className="w-full p-3 bg-slate-50 border rounded-xl focus:ring-2 focus:ring-blue-500" value={newRecord.type} onChange={e => setNewRecord({...newRecord, type: e.target.value})}>{Object.entries(RECORD_TYPES).map(([k,v]) => <option key={k} value={k}>{v.label}</option>)}</select></div></div>
+                <div><label className="block text-sm font-bold text-slate-600 mb-1">内容</label><textarea required className="w-full p-4 bg-slate-50 border rounded-xl min-h-[120px] focus:ring-2 focus:ring-blue-500" value={newRecord.content} onChange={e => setNewRecord({...newRecord, content: e.target.value})} /></div>
+                <div className="flex justify-end gap-2">
+                  {editingRecordId && (
+                    <button type="button" onClick={handleCancelEditRecord} className="flex items-center gap-2 px-4 py-3 bg-slate-100 text-slate-600 rounded-xl font-bold text-sm hover:bg-slate-200"><Icon name="X" size={18} /> キャンセル</button>
+                  )}
+                  <button type="submit" className="flex items-center gap-2 px-6 py-3 bg-slate-800 text-white rounded-xl font-bold text-sm hover:bg-slate-700 shadow-sm"><Icon name="Save" size={18} /> {editingRecordId ? "更新する" : "記録を保存"}</button>
+                </div>
               </form>
             </div>
           )}
@@ -1288,8 +1513,12 @@
                 return (
                   <div key={record.id} className="md:flex gap-6 items-start">
                     <div className="md:w-[100px] flex-shrink-0 pt-1 mb-2 md:mb-0"><div className="text-sm font-bold text-slate-500">{record.date}</div></div>
-                    <div className="flex-1 bg-white p-5 rounded-2xl shadow-sm border border-slate-200 print:shadow-none print:border-slate-300 print:rounded-lg">
-                      <div className="flex items-center gap-2 mb-3 print:mb-1"><span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border ${typeInfo.color} print:border-slate-400 print:text-black print:bg-transparent print:px-2 print:py-0.5`}><Icon name={typeInfo.icon} size={14} className="print:hidden" /> {typeInfo.label}</span></div>
+                    <div className="flex-1 bg-white p-5 rounded-2xl shadow-sm border border-slate-200 print:shadow-none print:border-slate-300 print:rounded-lg relative group hover:shadow-md transition-shadow">
+                      <div className="absolute top-3 right-3 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity print:hidden">
+                        <button onClick={() => handleEditRecord(record)} className="text-slate-400 hover:text-blue-600 bg-slate-50 hover:bg-white rounded-full p-1.5 shadow-sm border border-slate-100"><Icon name="Edit3" size={16} /></button>
+                        <button onClick={() => onDeleteRecord(record.id)} className="text-slate-400 hover:text-red-500 bg-slate-50 hover:bg-white rounded-full p-1.5 shadow-sm border border-slate-100"><Icon name="Trash2" size={16} /></button>
+                      </div>
+                      <div className="flex items-center gap-2 mb-3 print:mb-1 pr-14"><span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border ${typeInfo.color} print:border-slate-400 print:text-black print:bg-transparent print:px-2 print:py-0.5`}><Icon name={typeInfo.icon} size={14} className="print:hidden" /> {typeInfo.label}</span></div>
                       <p className="whitespace-pre-wrap text-slate-700 print:text-black leading-relaxed">{record.content}</p>
                     </div>
                   </div>
@@ -1301,428 +1530,11 @@
       );
     }
 
-    function StudentDetailsView({ studentDetails, setStudentDetails, students, showToast }) {
-      const fileInputRef = useRef(null);
-      const [sortConfig, setSortConfig] = useState({ key: 'number', direction: 'asc' });
-
-      const handleSort = (key) => {
-        let direction = 'desc';
-        if (sortConfig.key === key && sortConfig.direction === 'desc') { direction = 'asc'; }
-        setSortConfig({ key, direction });
-      };
-
-      const resetSort = () => { setSortConfig({ key: 'number', direction: 'asc' }); };
-
-      const sortedStudents = [...students].sort((a, b) => {
-        if (sortConfig.key === 'number') { return sortConfig.direction === 'asc' ? a.number - b.number : b.number - a.number; }
-        if (sortConfig.key === 'name') { return sortConfig.direction === 'asc' ? a.kana.localeCompare(b.kana, 'ja') : b.kana.localeCompare(a.kana, 'ja'); }
-        
-        const dA = studentDetails[a.id] || {};
-        const dB = studentDetails[b.id] || {};
-        const valA = dA[sortConfig.key] || '';
-        const valB = dB[sortConfig.key] || '';
-        
-        if (valA < valB) return sortConfig.direction === 'asc' ? -1 : 1;
-        if (valA > valB) return sortConfig.direction === 'asc' ? 1 : -1;
-        return 0;
-      });
-
-      const SortIcon = ({ columnKey }) => {
-        if (sortConfig.key !== columnKey) return <Icon name="ArrowUpDown" size={10} className="text-slate-300 ml-1 inline-block" />;
-        return sortConfig.direction === 'asc' ? <Icon name="ArrowUp" size={10} className="text-blue-500 ml-1 inline-block" /> : <Icon name="ArrowDown" size={10} className="text-blue-500 ml-1 inline-block" />;
-      };
-
-      const handleDownloadCSV = () => {
-        let csvContent = "出席番号,氏名,奨学生,部活,クラスの係・委員会,行事の係,コース（国語）,コース（数学）,コース（英語）,得意教科,苦手教科,将来の夢,行きたい大学,仲の良い友達,生徒の良いところ,改善したほうがいいところ,その他\n";
-        students.forEach(student => {
-          const d = studentDetails[student.id] || {};
-          const escapeCSV = (str) => {
-            if (!str) return '';
-            const s = String(str).replace(/"/g, '""');
-            if (s.includes(',') || s.includes('"') || s.includes('\n')) return `"${s}"`;
-            return s;
-          };
-          const row = [
-            student.number, student.name, escapeCSV(d.scholarship), escapeCSV(d.club), escapeCSV(d.committee), escapeCSV(d.event_role), 
-            escapeCSV(d.course_kokugo), escapeCSV(d.course_sugaku), escapeCSV(d.course_eigo), escapeCSV(d.strong_subject), 
-            escapeCSV(d.weak_subject), escapeCSV(d.dream), escapeCSV(d.university), escapeCSV(d.friends),
-            escapeCSV(d.good_points), escapeCSV(d.areas_to_improve), escapeCSV(d.others)
-          ];
-          csvContent += row.join(",") + "\n";
-        });
-        const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement("a");
-        link.setAttribute("href", URL.createObjectURL(blob));
-        link.setAttribute("download", `中2A_生徒詳細情報.csv`);
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-      };
-
-      const handleUploadCSV = (event) => {
-        const file = event.target.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          const parseCSVLine = (text) => {
-            const result = []; let current = ''; let inQuotes = false;
-            for (let i = 0; i < text.length; i++) {
-              const char = text[i];
-              if (inQuotes) {
-                if (char === '"') {
-                  if (i + 1 < text.length && text[i + 1] === '"') { current += '"'; i++; } else { inQuotes = false; }
-                } else { current += char; }
-              } else {
-                if (char === '"') { inQuotes = true; } else if (char === ',') { result.push(current); current = ''; } else { current += char; }
-              }
-            }
-            result.push(current); return result;
-          };
-          const lines = e.target.result.split(/\r\n|\n/);
-          const newStudentDetails = { ...studentDetails };
-          let updatedCount = 0;
-          for (let i = 1; i < lines.length; i++) {
-            if (!lines[i].trim()) continue;
-            const values = parseCSVLine(lines[i]).map(v => v.trim());
-            const studentNum = parseInt(values[0], 10);
-            const student = students.find(s => s.number === studentNum);
-            if (student) {
-              newStudentDetails[student.id] = { 
-                scholarship: values[2]||'', club: values[3]||'', committee: values[4]||'', event_role: values[5]||'', 
-                course_kokugo: values[6]||'', course_sugaku: values[7]||'', course_eigo: values[8]||'', 
-                strong_subject: values[9]||'', weak_subject: values[10]||'', dream: values[11]||'', 
-                university: values[12]||'', friends: values[13]||'', good_points: values[14]||'',
-                areas_to_improve: values[15]||'', others: values[16]||''
-              };
-              updatedCount++;
-            }
-          }
-          setStudentDetails(newStudentDetails);
-          event.target.value = null;
-          showToast(`${updatedCount}名の詳細情報を読み込みました。`);
-        };
-        reader.readAsText(file);
-      };
-
+    function NavItem({ icon, label, active, onClick }) {
       return (
-        <div className="max-w-full mx-auto animate-in fade-in duration-300">
-          <header className="mb-8 flex justify-between items-end flex-wrap gap-4">
-            <div>
-              <h2 className="text-2xl font-bold text-slate-800">生徒詳細情報管理</h2>
-              <p className="text-slate-500 mt-2">部活や進路希望などの情報を一括でダウンロード・アップロードします。</p>
-            </div>
-            <button onClick={resetSort} className="flex items-center gap-1 px-3 py-1.5 bg-slate-100 text-slate-600 rounded-lg text-xs font-bold hover:bg-slate-200 transition-colors"><Icon name="RotateCcw" size={14} /> 元の順番に戻る</button>
-          </header>
-          <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-            <div className="flex flex-wrap gap-6 items-end justify-between border-b border-slate-100 pb-6 mb-6">
-              <div className="flex gap-3">
-                <button onClick={handleDownloadCSV} className="flex items-center gap-2 px-4 py-2.5 bg-white border border-slate-300 text-slate-700 rounded-xl font-bold text-sm shadow-sm hover:bg-slate-50 transition-colors"><Icon name="Download" size={18} /> CSVフォーマットをダウンロード</button>
-                <input type="file" accept=".csv" className="hidden" ref={fileInputRef} onChange={handleUploadCSV} />
-                <button onClick={() => fileInputRef.current?.click()} className="flex items-center gap-2 px-4 py-2.5 bg-indigo-50 border border-indigo-200 text-indigo-700 rounded-xl font-bold text-sm shadow-sm hover:bg-indigo-100 transition-colors"><Icon name="Upload" size={18} /> 入力したCSVをアップロード</button>
-              </div>
-            </div>
-            <div className="overflow-x-auto relative">
-              <table className="w-full text-sm text-left border-collapse min-w-[1600px]"><thead className="bg-slate-50 text-slate-600 font-bold border-y border-slate-200 select-none">
-                <tr>
-                  <th className="p-3 text-center border-r border-slate-200 w-12 cursor-pointer hover:bg-slate-200 sticky left-0 z-20 bg-slate-50" onClick={() => handleSort('number')}>番号<SortIcon columnKey="number" /></th>
-                  <th className="p-3 border-r border-slate-200 w-32 cursor-pointer hover:bg-slate-200 sticky left-[48px] z-20 bg-slate-50" onClick={() => handleSort('name')}>氏名<SortIcon columnKey="name" /></th>
-                  <th className="p-3 text-center border-r border-slate-200 cursor-pointer hover:bg-slate-100" onClick={() => handleSort('scholarship')}>奨学生<SortIcon columnKey="scholarship" /></th>
-                  <th className="p-3 cursor-pointer hover:bg-slate-100 whitespace-nowrap" onClick={() => handleSort('club')}>部活<SortIcon columnKey="club" /></th>
-                  <th className="p-3 cursor-pointer hover:bg-slate-100 whitespace-nowrap" onClick={() => handleSort('committee')}>係・委員会<SortIcon columnKey="committee" /></th>
-                  <th className="p-3 cursor-pointer hover:bg-slate-100 whitespace-nowrap" onClick={() => handleSort('event_role')}>行事係<SortIcon columnKey="event_role" /></th>
-                  <th className="p-3 cursor-pointer hover:bg-slate-100 whitespace-nowrap" onClick={() => handleSort('course_kokugo')}>国語<SortIcon columnKey="course_kokugo" /></th>
-                  <th className="p-3 cursor-pointer hover:bg-slate-100 whitespace-nowrap" onClick={() => handleSort('course_sugaku')}>数学<SortIcon columnKey="course_sugaku" /></th>
-                  <th className="p-3 cursor-pointer hover:bg-slate-100 whitespace-nowrap" onClick={() => handleSort('course_eigo')}>英語<SortIcon columnKey="course_eigo" /></th>
-                  <th className="p-3 cursor-pointer hover:bg-slate-100 whitespace-nowrap" onClick={() => handleSort('strong_subject')}>得意教科<SortIcon columnKey="strong_subject" /></th>
-                  <th className="p-3 cursor-pointer hover:bg-slate-100 whitespace-nowrap" onClick={() => handleSort('weak_subject')}>苦手教科<SortIcon columnKey="weak_subject" /></th>
-                  <th className="p-3 cursor-pointer hover:bg-slate-100 whitespace-nowrap" onClick={() => handleSort('dream')}>将来の夢<SortIcon columnKey="dream" /></th>
-                  <th className="p-3 cursor-pointer hover:bg-slate-100 whitespace-nowrap" onClick={() => handleSort('university')}>行きたい大学<SortIcon columnKey="university" /></th>
-                  <th className="p-3 cursor-pointer hover:bg-slate-100 whitespace-nowrap" onClick={() => handleSort('friends')}>仲の良い友達<SortIcon columnKey="friends" /></th>
-                  <th className="p-3 cursor-pointer hover:bg-slate-100 whitespace-nowrap" onClick={() => handleSort('good_points')}>生徒の良いところ<SortIcon columnKey="good_points" /></th>
-                  <th className="p-3 cursor-pointer hover:bg-slate-100 whitespace-nowrap" onClick={() => handleSort('areas_to_improve')}>改善したほうがいいところ<SortIcon columnKey="areas_to_improve" /></th>
-                  <th className="p-3 cursor-pointer hover:bg-slate-100 whitespace-nowrap" onClick={() => handleSort('others')}>その他<SortIcon columnKey="others" /></th>
-                </tr>
-              </thead><tbody className="divide-y divide-slate-100">
-                {sortedStudents.map(student => {
-                  const d = studentDetails[student.id] || {};
-                  return <tr key={student.id} className="group hover:bg-slate-50 transition-colors">
-                    <td className="p-3 text-center border-r border-slate-200 font-bold text-slate-500 sticky left-0 z-10 bg-white group-hover:bg-slate-50">{student.number}</td>
-                    <td className="p-3 border-r border-slate-200 font-bold text-slate-800 sticky left-[48px] z-10 bg-white group-hover:bg-slate-50">{student.name}</td>
-                    <td className="p-3 text-center border-r border-slate-200 font-bold text-amber-600">{d.scholarship||'-'}</td>
-                    <td className="p-3 truncate">{d.club||'-'}</td><td className="p-3 truncate">{d.committee||'-'}</td><td className="p-3 truncate">{d.event_role||'-'}</td>
-                    <td className="p-3 truncate">{d.course_kokugo||'-'}</td><td className="p-3 truncate">{d.course_sugaku||'-'}</td><td className="p-3 truncate">{d.course_eigo||'-'}</td>
-                    <td className="p-3 truncate">{d.strong_subject||'-'}</td><td className="p-3 truncate">{d.weak_subject||'-'}</td><td className="p-3 truncate">{d.dream||'-'}</td>
-                    <td className="p-3 truncate">{d.university||'-'}</td><td className="p-3 truncate">{d.friends||'-'}</td><td className="p-3 truncate">{d.good_points||'-'}</td>
-                    <td className="p-3 truncate">{d.areas_to_improve||'-'}</td><td className="p-3 truncate">{d.others||'-'}</td>
-                  </tr>
-                })}
-              </tbody></table>
-            </div>
-          </div>
-        </div>
-      );
-    }
-
-    function GradesView({ grades, setGrades, students, testTerms, showToast }) {
-      const [selectedTerm, setSelectedTerm] = useState(testTerms[0].id);
-      const [sortConfig, setSortConfig] = useState({ key: 'number', direction: 'asc' });
-      const fileInputRef = useRef(null);
-
-      const handleSort = (key) => {
-        let direction = 'desc';
-        if (sortConfig.key === key && sortConfig.direction === 'desc') { direction = 'asc'; }
-        setSortConfig({ key, direction });
-      };
-
-      const resetSort = () => { setSortConfig({ key: 'number', direction: 'asc' }); };
-
-      const sortedStudents = [...students].sort((a, b) => {
-        if (sortConfig.key === 'number') return sortConfig.direction === 'asc' ? a.number - b.number : b.number - a.number;
-        if (sortConfig.key === 'name') return sortConfig.direction === 'asc' ? a.kana.localeCompare(b.kana, 'ja') : b.kana.localeCompare(a.kana, 'ja');
-        
-        const gA = grades[selectedTerm]?.[a.id] || {};
-        const gB = grades[selectedTerm]?.[b.id] || {};
-        const valA = gA[sortConfig.key];
-        const valB = gB[sortConfig.key];
-        const numA = valA === '' || valA === undefined || valA === '-' ? -Infinity : Number(valA);
-        const numB = valB === '' || valB === undefined || valB === '-' ? -Infinity : Number(valB);
-
-        if (numA < numB) return sortConfig.direction === 'asc' ? -1 : 1;
-        if (numA > numB) return sortConfig.direction === 'asc' ? 1 : -1;
-        return 0;
-      });
-
-      const SortIcon = ({ columnKey }) => {
-        if (sortConfig.key !== columnKey) return <Icon name="ArrowUpDown" size={12} className="text-slate-300 ml-1 inline-block" />;
-        return sortConfig.direction === 'asc' ? <Icon name="ArrowUp" size={12} className="text-blue-500 ml-1 inline-block" /> : <Icon name="ArrowDown" size={12} className="text-blue-500 ml-1 inline-block" />;
-      };
-
-      const handleDownloadCSV = () => {
-        const termName = testTerms.find(t => t.id === selectedTerm).name;
-        let csvContent = "出席番号,氏名,国語,社会,数学,理科,外国語,総点,平均点,学級席次,学年席次\n";
-        students.forEach(student => {
-          const g = grades[selectedTerm]?.[student.id] || {};
-          const row = [student.number, student.name, g.kokugo||'', g.shakai||'', g.sugaku||'', g.rika||'', g.eigo||'', g.total||'', g.average||'', g.class_rank||'', g.grade_rank||''];
-          csvContent += row.join(",") + "\n";
-        });
-        const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement("a");
-        link.setAttribute("href", URL.createObjectURL(blob));
-        link.setAttribute("download", `中2A_${termName}成績.csv`);
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-      };
-
-      const handleUploadCSV = (event) => {
-        const file = event.target.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          const lines = e.target.result.split(/\r\n|\n/);
-          const newTermGrades = { ...(grades[selectedTerm] || {}) };
-          let updatedCount = 0;
-          for (let i = 1; i < lines.length; i++) {
-            if (!lines[i].trim()) continue;
-            const values = lines[i].split(',').map(v => v.trim());
-            const studentNum = parseInt(values[0], 10);
-            const student = students.find(s => s.number === studentNum);
-            if (student) {
-              newTermGrades[student.id] = { kokugo: values[2]||'', shakai: values[3]||'', sugaku: values[4]||'', rika: values[5]||'', eigo: values[6]||'', total: values[7]||'', average: values[8]||'', class_rank: values[9]||'', grade_rank: values[10]||'' };
-              updatedCount++;
-            }
-          }
-          setGrades(prev => ({ ...prev, [selectedTerm]: newTermGrades }));
-          event.target.value = null;
-          showToast(`${updatedCount}名の成績データを読み込みました。`);
-        };
-        reader.readAsText(file);
-      };
-
-      return (
-        <div className="max-w-6xl mx-auto">
-          <header className="mb-8 flex justify-between items-end">
-            <h2 className="text-2xl font-bold text-slate-800">定期考査 成績管理</h2>
-            <button onClick={resetSort} className="flex items-center gap-1 px-3 py-1.5 bg-slate-100 text-slate-600 rounded-lg text-xs font-bold hover:bg-slate-200 transition-colors"><Icon name="RotateCcw" size={14} /> 元の順番に戻る</button>
-          </header>
-          <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-            <div className="flex flex-wrap gap-6 items-end justify-between border-b border-slate-100 pb-6 mb-6">
-              <div>
-                <label className="block text-sm font-bold text-slate-600 mb-2">表示・入力する考査を選択</label>
-                <div className="flex flex-wrap gap-2">
-                  {testTerms.map(term => (
-                    <button key={term.id} onClick={() => setSelectedTerm(term.id)} className={`px-4 py-2 rounded-lg text-sm font-bold ${selectedTerm === term.id ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>{term.name}</button>
-                  ))}
-                </div>
-              </div>
-              <div className="flex gap-3">
-                <button onClick={handleDownloadCSV} className="flex items-center gap-2 px-4 py-2.5 bg-white border border-slate-300 text-slate-700 rounded-xl font-bold text-sm shadow-sm"><Icon name="Download" size={18} /> CSVダウンロード</button>
-                <input type="file" accept=".csv" className="hidden" ref={fileInputRef} onChange={handleUploadCSV} />
-                <button onClick={() => fileInputRef.current?.click()} className="flex items-center gap-2 px-4 py-2.5 bg-blue-50 border border-blue-200 text-blue-700 rounded-xl font-bold text-sm shadow-sm"><Icon name="Upload" size={18} /> CSVアップロード</button>
-              </div>
-            </div>
-            <div className="overflow-x-auto relative">
-              <table className="w-full text-sm text-left border-collapse min-w-[800px]"><thead className="bg-slate-50 text-slate-600 font-bold border-y border-slate-200 select-none">
-                <tr>
-                  <th className="p-3 text-center border-r border-slate-200 w-12 cursor-pointer hover:bg-slate-200 sticky left-0 z-20 bg-slate-50" onClick={() => handleSort('number')}>番号<SortIcon columnKey="number" /></th>
-                  <th className="p-3 border-r border-slate-200 w-32 cursor-pointer hover:bg-slate-200 sticky left-[48px] z-20 bg-slate-50" onClick={() => handleSort('name')}>氏名<SortIcon columnKey="name" /></th>
-                  <th className="p-3 text-center cursor-pointer hover:bg-slate-100" onClick={() => handleSort('kokugo')}>国語<SortIcon columnKey="kokugo" /></th>
-                  <th className="p-3 text-center cursor-pointer hover:bg-slate-100" onClick={() => handleSort('shakai')}>社会<SortIcon columnKey="shakai" /></th>
-                  <th className="p-3 text-center cursor-pointer hover:bg-slate-100" onClick={() => handleSort('sugaku')}>数学<SortIcon columnKey="sugaku" /></th>
-                  <th className="p-3 text-center cursor-pointer hover:bg-slate-100" onClick={() => handleSort('rika')}>理科<SortIcon columnKey="rika" /></th>
-                  <th className="p-3 text-center border-r border-slate-200 cursor-pointer hover:bg-slate-100" onClick={() => handleSort('eigo')}>外国語<SortIcon columnKey="eigo" /></th>
-                  <th className="p-3 text-center bg-blue-50/50 cursor-pointer hover:bg-blue-100" onClick={() => handleSort('total')}>総点<SortIcon columnKey="total" /></th>
-                  <th className="p-3 text-center border-r border-slate-200 cursor-pointer hover:bg-slate-100" onClick={() => handleSort('average')}>平均点<SortIcon columnKey="average" /></th>
-                  <th className="p-3 text-center cursor-pointer hover:bg-slate-100" onClick={() => handleSort('class_rank')}>学級席次<SortIcon columnKey="class_rank" /></th>
-                  <th className="p-3 text-center cursor-pointer hover:bg-slate-100" onClick={() => handleSort('grade_rank')}>学年席次<SortIcon columnKey="grade_rank" /></th>
-                </tr>
-              </thead><tbody className="divide-y divide-slate-100">
-                {sortedStudents.map(student => {
-                  const g = grades[selectedTerm]?.[student.id];
-                  const hasData = !!g && Object.values(g).some(v => v !== '');
-                  return <tr key={student.id} className="group hover:bg-slate-50 transition-colors">
-                    <td className="p-3 text-center border-r border-slate-200 font-bold text-slate-500 sticky left-0 z-10 bg-white group-hover:bg-slate-50">{student.number}</td>
-                    <td className="p-3 border-r border-slate-200 font-bold text-slate-800 sticky left-[48px] z-10 bg-white group-hover:bg-slate-50">{student.name}</td>
-                    <td className={`p-3 text-center ${hasData?'text-slate-800':'text-slate-300'}`}>{g?.kokugo||'-'}</td><td className={`p-3 text-center ${hasData?'text-slate-800':'text-slate-300'}`}>{g?.shakai||'-'}</td><td className={`p-3 text-center ${hasData?'text-slate-800':'text-slate-300'}`}>{g?.sugaku||'-'}</td><td className={`p-3 text-center ${hasData?'text-slate-800':'text-slate-300'}`}>{g?.rika||'-'}</td><td className={`p-3 text-center border-r border-slate-200 ${hasData?'text-slate-800':'text-slate-300'}`}>{g?.eigo||'-'}</td><td className={`p-3 text-center font-bold bg-blue-50/30 ${hasData?'text-blue-800':'text-slate-300'}`}>{g?.total||'-'}</td><td className={`p-3 text-center border-r border-slate-200 ${hasData?'text-slate-800':'text-slate-300'}`}>{g?.average||'-'}</td><td className={`p-3 text-center ${hasData?'text-slate-800':'text-slate-300'}`}>{g?.class_rank||'-'}</td><td className={`p-3 text-center ${hasData?'text-slate-800':'text-slate-300'}`}>{g?.grade_rank||'-'}</td></tr>
-                })}
-              </tbody></table>
-            </div>
-          </div>
-        </div>
-      );
-    }
-
-    function MockGradesView({ mockGrades, setMockGrades, students, mockExams, showToast }) {
-      const [selectedMock, setSelectedMock] = useState(mockExams[0].id);
-      const [sortConfig, setSortConfig] = useState({ key: 'number', direction: 'asc' });
-      const fileInputRef = useRef(null);
-
-      const handleSort = (key) => {
-        let direction = 'desc';
-        if (sortConfig.key === key && sortConfig.direction === 'desc') { direction = 'asc'; }
-        setSortConfig({ key, direction });
-      };
-
-      const resetSort = () => { setSortConfig({ key: 'number', direction: 'asc' }); };
-
-      const sortedStudents = [...students].sort((a, b) => {
-        if (sortConfig.key === 'number') return sortConfig.direction === 'asc' ? a.number - b.number : b.number - a.number;
-        if (sortConfig.key === 'name') return sortConfig.direction === 'asc' ? a.kana.localeCompare(b.kana, 'ja') : b.kana.localeCompare(a.kana, 'ja');
-        
-        const gA = mockGrades[selectedMock]?.[a.id] || {};
-        const gB = mockGrades[selectedMock]?.[b.id] || {};
-        const valA = gA[sortConfig.key];
-        const valB = gB[sortConfig.key];
-        const numA = valA === '' || valA === undefined || valA === '-' ? -Infinity : Number(valA);
-        const numB = valB === '' || valB === undefined || valB === '-' ? -Infinity : Number(valB);
-
-        if (numA < numB) return sortConfig.direction === 'asc' ? -1 : 1;
-        if (numA > numB) return sortConfig.direction === 'asc' ? 1 : -1;
-        return 0;
-      });
-
-      const SortIcon = ({ columnKey }) => {
-        if (sortConfig.key !== columnKey) return <Icon name="ArrowUpDown" size={10} className="text-slate-300 ml-1 inline-block" />;
-        return sortConfig.direction === 'asc' ? <Icon name="ArrowUp" size={10} className="text-blue-500 ml-1 inline-block" /> : <Icon name="ArrowDown" size={10} className="text-blue-500 ml-1 inline-block" />;
-      };
-
-      const handleDownloadCSV = () => {
-        const mockName = mockExams.find(m => m.id === selectedMock).name;
-        let csvContent = "出席番号,氏名,国数英得点,国数英偏差値,国語得点,国語偏差値,数学得点,数学偏差値,英語得点,英語偏差値\n";
-        students.forEach(student => {
-          const mg = mockGrades[selectedMock]?.[student.id] || {};
-          const row = [student.number, student.name, mg.total_score||'', mg.total_dev||'', mg.kokugo_score||'', mg.kokugo_dev||'', mg.sugaku_score||'', mg.sugaku_dev||'', mg.eigo_score||'', mg.eigo_dev||''];
-          csvContent += row.join(",") + "\n";
-        });
-        const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement("a");
-        link.setAttribute("href", URL.createObjectURL(blob));
-        link.setAttribute("download", `中2A_${mockName}成績.csv`);
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-      };
-
-      const handleUploadCSV = (event) => {
-        const file = event.target.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          const lines = e.target.result.split(/\r\n|\n/);
-          const newMockGrades = { ...(mockGrades[selectedMock] || {}) };
-          let updatedCount = 0;
-          for (let i = 1; i < lines.length; i++) {
-            if (!lines[i].trim()) continue;
-            const values = lines[i].split(',').map(v => v.trim());
-            const studentNum = parseInt(values[0], 10);
-            const student = students.find(s => s.number === studentNum);
-            if (student) {
-              newMockGrades[student.id] = { total_score: values[2]||'', total_dev: values[3]||'', kokugo_score: values[4]||'', kokugo_dev: values[5]||'', sugaku_score: values[6]||'', sugaku_dev: values[7]||'', eigo_score: values[8]||'', eigo_dev: values[9]||'' };
-              updatedCount++;
-            }
-          }
-          setMockGrades(prev => ({ ...prev, [selectedMock]: newMockGrades }));
-          event.target.value = null;
-          showToast(`${updatedCount}名の模試成績データを読み込みました。`);
-        };
-        reader.readAsText(file);
-      };
-
-      return (
-        <div className="max-w-6xl mx-auto">
-          <header className="mb-8 flex justify-between items-end">
-            <h2 className="text-2xl font-bold text-slate-800">模試成績 (学力推移調査)</h2>
-            <button onClick={resetSort} className="flex items-center gap-1 px-3 py-1.5 bg-slate-100 text-slate-600 rounded-lg text-xs font-bold hover:bg-slate-200 transition-colors"><Icon name="RotateCcw" size={14} /> 元の順番に戻る</button>
-          </header>
-          <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-            <div className="flex flex-wrap gap-6 items-end justify-between border-b border-slate-100 pb-6 mb-6">
-              <div>
-                <label className="block text-sm font-bold text-slate-600 mb-2">表示・入力する回を選択</label>
-                <div className="flex flex-wrap gap-2">
-                  {mockExams.map(mock => (
-                    <button key={mock.id} onClick={() => setSelectedMock(mock.id)} className={`px-4 py-2 rounded-lg text-sm font-bold ${selectedMock === mock.id ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>{mock.name}</button>
-                  ))}
-                </div>
-              </div>
-              <div className="flex gap-3">
-                <button onClick={handleDownloadCSV} className="flex items-center gap-2 px-4 py-2.5 bg-white border border-slate-300 text-slate-700 rounded-xl font-bold text-sm shadow-sm"><Icon name="Download" size={18} /> CSVダウンロード</button>
-                <input type="file" accept=".csv" className="hidden" ref={fileInputRef} onChange={handleUploadCSV} />
-                <button onClick={() => fileInputRef.current?.click()} className="flex items-center gap-2 px-4 py-2.5 bg-blue-50 border border-blue-200 text-blue-700 rounded-xl font-bold text-sm shadow-sm"><Icon name="Upload" size={18} /> CSVアップロード</button>
-              </div>
-            </div>
-            <div className="overflow-x-auto relative">
-              <table className="w-full text-sm text-left border-collapse min-w-[800px]"><thead className="bg-slate-50 text-slate-600 font-bold border-y border-slate-200 select-none">
-                <tr>
-                  <th className="p-3 text-center border-r border-slate-200 w-12 cursor-pointer hover:bg-slate-200 sticky left-0 z-20 bg-slate-50" rowSpan="2" onClick={() => handleSort('number')}>番号<SortIcon columnKey="number" /></th>
-                  <th className="p-3 border-r border-slate-200 w-32 cursor-pointer hover:bg-slate-200 sticky left-[48px] z-20 bg-slate-50" rowSpan="2" onClick={() => handleSort('name')}>氏名<SortIcon columnKey="name" /></th>
-                  <th className="p-2 text-center border-r border-slate-200 bg-blue-50/50" colSpan="2">国数英 総合</th>
-                  <th className="p-2 text-center border-r border-slate-200" colSpan="2">国語</th>
-                  <th className="p-2 text-center border-r border-slate-200" colSpan="2">数学</th>
-                  <th className="p-2 text-center" colSpan="2">英語</th>
-                </tr>
-                <tr>
-                  <th className="p-2 text-center text-xs bg-blue-50/50 cursor-pointer hover:bg-blue-100" onClick={() => handleSort('total_score')}>得点<SortIcon columnKey="total_score" /></th>
-                  <th className="p-2 text-center text-xs border-r border-slate-200 bg-blue-50/50 text-blue-700 cursor-pointer hover:bg-blue-100" onClick={() => handleSort('total_dev')}>偏差値<SortIcon columnKey="total_dev" /></th>
-                  <th className="p-2 text-center text-xs cursor-pointer hover:bg-slate-100" onClick={() => handleSort('kokugo_score')}>得点<SortIcon columnKey="kokugo_score" /></th>
-                  <th className="p-2 text-center text-xs border-r border-slate-200 cursor-pointer hover:bg-slate-100" onClick={() => handleSort('kokugo_dev')}>偏差値<SortIcon columnKey="kokugo_dev" /></th>
-                  <th className="p-2 text-center text-xs cursor-pointer hover:bg-slate-100" onClick={() => handleSort('sugaku_score')}>得点<SortIcon columnKey="sugaku_score" /></th>
-                  <th className="p-2 text-center text-xs border-r border-slate-200 cursor-pointer hover:bg-slate-100" onClick={() => handleSort('sugaku_dev')}>偏差値<SortIcon columnKey="sugaku_dev" /></th>
-                  <th className="p-2 text-center text-xs cursor-pointer hover:bg-slate-100" onClick={() => handleSort('eigo_score')}>得点<SortIcon columnKey="eigo_score" /></th>
-                  <th className="p-2 text-center text-xs cursor-pointer hover:bg-slate-100" onClick={() => handleSort('eigo_dev')}>偏差値<SortIcon columnKey="eigo_dev" /></th>
-                </tr>
-              </thead><tbody className="divide-y divide-slate-100">
-                {sortedStudents.map(student => {
-                  const mg = mockGrades[selectedMock]?.[student.id];
-                  const hasData = !!mg && Object.values(mg).some(v => v !== '');
-                  return <tr key={student.id} className="group hover:bg-slate-50 transition-colors">
-                    <td className="p-3 text-center border-r border-slate-200 font-bold text-slate-500 sticky left-0 z-10 bg-white group-hover:bg-slate-50">{student.number}</td>
-                    <td className="p-3 border-r border-slate-200 font-bold text-slate-800 sticky left-[48px] z-10 bg-white group-hover:bg-slate-50">{student.name}</td>
-                    <td className={`p-2 text-center bg-blue-50/30 font-bold ${hasData?'text-slate-800':'text-slate-300'}`}>{mg?.total_score||'-'}</td><td className={`p-2 text-center border-r border-slate-200 bg-blue-50/30 font-bold ${hasData?'text-blue-700':'text-slate-300'}`}>{mg?.total_dev||'-'}</td><td className={`p-2 text-center ${hasData?'text-slate-800':'text-slate-300'}`}>{mg?.kokugo_score||'-'}</td><td className={`p-2 text-center border-r border-slate-200 ${hasData?'text-slate-600':'text-slate-300'}`}>{mg?.kokugo_dev||'-'}</td><td className={`p-2 text-center ${hasData?'text-slate-800':'text-slate-300'}`}>{mg?.sugaku_score||'-'}</td><td className={`p-2 text-center border-r border-slate-200 ${hasData?'text-slate-600':'text-slate-300'}`}>{mg?.sugaku_dev||'-'}</td><td className={`p-2 text-center ${hasData?'text-slate-800':'text-slate-300'}`}>{mg?.eigo_score||'-'}</td><td className={`p-2 text-center ${hasData?'text-slate-600':'text-slate-300'}`}>{mg?.eigo_dev||'-'}</td></tr>
-                })}
-              </tbody></table>
-            </div>
-          </div>
-        </div>
+        <button onClick={onClick} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-sm font-medium ${active ? 'bg-blue-50 text-blue-700 border border-blue-100' : 'text-slate-600 hover:bg-slate-50'}`}>
+          {icon} {label}
+        </button>
       );
     }
 
