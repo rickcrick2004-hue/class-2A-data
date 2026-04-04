@@ -411,11 +411,21 @@
           localStorage.removeItem('customFirebaseConfig'); setCustomFirebaseConfig(''); showToast("リセットしました"); setTimeout(() => window.location.reload(), 1000); return;
         }
         try {
-          const parsed = typeof configInput === 'string' ? JSON.parse(configInput.replace(/\s+/g,'').replace(/([a-zA-Z0-9_]+):/g,'"$1":').replace(/'/g,'"').replace(/,}/g,'}')) : configInput;
+          let parsed = null;
+          if (typeof configInput === 'object') {
+            parsed = configInput;
+          } else {
+            // { } で囲まれた部分だけを自動抽出して読み込む
+            const match = configInput.match(/\{[\s\S]*\}/);
+            if (match) {
+              try { parsed = (new Function("return " + match[0]))(); }
+              catch(e) { parsed = JSON.parse(match[0].replace(/'/g, '"').replace(/([{,]\s*)([a-zA-Z0-9_]+)\s*:/g, '$1"$2":').replace(/,\s*}/g, '}')); }
+            }
+          }
           if (parsed && parsed.apiKey && parsed.projectId) {
             localStorage.setItem('customFirebaseConfig', JSON.stringify(parsed)); setCustomFirebaseConfig(JSON.stringify(parsed)); showToast("保存しました"); setTimeout(() => window.location.reload(), 1000);
           } else { showToast("無効な設定形式です"); }
-        } catch(e) { showToast("設定解析エラー"); }
+        } catch(e) { showToast("設定解析エラー"); console.error(e); }
       };
 
       useEffect(() => {
