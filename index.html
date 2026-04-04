@@ -5,48 +5,28 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>2年A組 クラスノート</title>
   
-  <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
-  
-  <!-- React & ReactDOM -->
   <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-  
-  <!-- Babel -->
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
   <style>
-    /* 印刷時のスタイル調整 */
     @media print {
       @page { margin: 10mm; }
       body { -webkit-print-color-adjust: exact; print-color-adjust: exact; font-size: 10px; line-height: 1.3; }
       .print\:hidden { display: none !important; }
       .print\:block { display: block !important; }
       .print\:p-0 { padding: 0 !important; }
+      .print\:border-none { border: none !important; }
       .print\:shadow-none { box-shadow: none !important; }
-      .print\:border-b-2 { border-bottom-width: 1px !important; border-color: #cbd5e1 !important; }
-      .print\:rounded-none { border-radius: 0 !important; }
       .break-after-page { page-break-after: always; break-after: page; }
-      .mb-8 { margin-bottom: 10px !important; }
-      .mb-6 { margin-bottom: 6px !important; }
-      .mb-4 { margin-bottom: 4px !important; }
+      .mb-8, .mb-6, .mb-4 { margin-bottom: 6px !important; }
       .p-8, .p-6 { padding: 6px 0 !important; border: none !important; box-shadow: none !important; }
-      .pb-3 { padding-bottom: 2px !important; }
-      h2.text-4xl { font-size: 18px !important; margin-bottom: 2px !important; }
-      h3.text-lg, h3.text-xl { font-size: 12px !important; margin-bottom: 4px !important; padding-bottom: 2px !important; border-bottom: 1px solid #cbd5e1 !important; }
-      .md\:grid-cols-2 { grid-template-columns: repeat(4, minmax(0, 1fr)) !important; }
-      .gap-y-4 { row-gap: 2px !important; }
-      .gap-x-8 { column-gap: 8px !important; }
-      .min-h-\[28px\] { min-height: 14px !important; font-size: 9px !important; padding: 2px 4px !important; }
-      .text-xs { font-size: 8px !important; }
-      table { font-size: 9px !important; width: 100% !important; }
+      h2 { font-size: 16px !important; margin-bottom: 2px !important; }
+      h3 { font-size: 12px !important; margin-bottom: 2px !important; border-bottom: 1px solid #cbd5e1 !important; }
+      table { font-size: 9px !important; width: 100% !important; border-collapse: collapse; }
       th, td { padding: 3px 2px !important; border: 1px solid #e2e8f0 !important; }
       .overflow-x-auto { overflow: visible !important; }
-      .md\:flex { display: flex !important; }
-      .gap-6 { gap: 8px !important; }
-      .md\:w-\[100px\] { width: 50px !important; font-size: 9px !important; flex-shrink: 0; }
-      .p-5 { padding: 6px !important; border: 1px solid #e2e8f0 !important; }
-      .text-sm { font-size: 10px !important; }
     }
   </style>
 </head>
@@ -55,149 +35,344 @@
 
   <script type="text/babel" data-type="module">
     const { useState, useEffect, useRef, useCallback } = React;
+    import { Users, Target, Printer, Calendar as CalIcon, ArrowLeft, MessageCircle, AlertTriangle, BookOpen, Phone, Plus, Save, ChevronRight, FileSpreadsheet, Database, ClipboardList, Edit3, Check, Download, Upload, LineChart, Cloud, UploadCloud as CloudUpload, DownloadCloud as CloudDownload, Settings, ChevronDown, Menu, Loader2, ArrowUpDown, ArrowUp, ArrowDown, RotateCcw, Lightbulb, CheckSquare, Star, Trash2, X, Heart } from 'https://esm.sh/lucide-react@0.344.0';
+    import { initializeApp, getApps, getApp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js';
+    import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
+    import { getFirestore, doc, setDoc, getDoc, onSnapshot } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
 
-    // === SVG Icons Component ===
-    const Icon = ({ name, size = 24, className = "" }) => {
-      const icons = {
-        Users: <><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></>,
-        Target: <><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></>,
-        Printer: <><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect width="12" height="8" x="6" y="14"/></>,
-        Calendar: <><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></>,
-        ArrowLeft: <><line x1="19" x2="5" y1="12" y2="12"/><polyline points="12 19 5 12 12 5"/></>,
-        MessageCircle: <><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></>,
-        AlertTriangle: <><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></>,
-        BookOpen: <><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></>,
-        Phone: <><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></>,
-        Plus: <><line x1="12" x2="12" y1="5" y2="19"/><line x1="5" x2="19" y1="12" y2="12"/></>,
-        Save: <><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></>,
-        ChevronRight: <><polyline points="9 18 15 12 9 6"/></>,
-        FileSpreadsheet: <><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M8 13h2"/><path d="M14 13h2"/><path d="M8 17h2"/><path d="M14 17h2"/></>,
-        Database: <><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5V19A9 3 0 0 0 21 19V5"/><path d="M3 12A9 3 0 0 0 21 12"/></>,
-        ClipboardList: <><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/></>,
-        Edit3: <><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></>,
-        Check: <><polyline points="20 6 9 17 4 12"/></>,
-        Download: <><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></>,
-        Upload: <><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></>,
-        LineChart: <><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></>,
-        Cloud: <><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></>,
-        CloudUpload: <><path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/><path d="M12 12v9"/><path d="m16 16-4-4-4 4"/></>,
-        CloudDownload: <><path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/><path d="M12 12v9"/><path d="m8 17 4 4 4-4"/></>,
-        Settings: <><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></>,
-        ChevronDown: <><polyline points="6 9 12 15 18 9"/></>,
-        Menu: <><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/></>,
-        Loader2: <><path d="M21 12a9 9 0 1 1-6.219-8.56"/></>,
-        ArrowUpDown: <><path d="m21 16-4 4-4-4"/><path d="M17 20V4"/><path d="m3 8 4-4 4 4"/><path d="M7 4v16"/></>,
-        ArrowUp: <><path d="m5 12 7-7 7 7"/><path d="M12 19V5"/></>,
-        ArrowDown: <><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></>,
-        RotateCcw: <><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></>,
-        Lightbulb: <><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.9 1.2 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/></>,
-        CheckSquare: <><rect width="18" height="18" x="3" y="3" rx="2"/><path d="m9 12 2 2 4-4"/></>,
-        Star: <><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></>,
-        Trash2: <><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></>,
-        X: <><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></>
-      };
+    // --- 超圧縮版アイコン群 ---
+    const ICONS = {
+      Users: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
+      Target: '<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>',
+      Printer: '<polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect width="12" height="8" x="6" y="14"/>',
+      Calendar: '<rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/>',
+      ArrowLeft: '<line x1="19" x2="5" y1="12" y2="12"/><polyline points="12 19 5 12 12 5"/>',
+      MessageCircle: '<path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/>',
+      AlertTriangle: '<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/>',
+      BookOpen: '<path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>',
+      Phone: '<path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>',
+      Plus: '<line x1="12" x2="12" y1="5" y2="19"/><line x1="5" x2="19" y1="12" y2="12"/>',
+      Save: '<path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/>',
+      ChevronRight: '<polyline points="9 18 15 12 9 6"/>',
+      FileSpreadsheet: '<path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M8 13h2"/><path d="M14 13h2"/><path d="M8 17h2"/><path d="M14 17h2"/>',
+      Database: '<ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5V19A9 3 0 0 0 21 19V5"/><path d="M3 12A9 3 0 0 0 21 12"/>',
+      ClipboardList: '<rect x="8" y="2" width="8" height="4" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/>',
+      Edit3: '<path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>',
+      Check: '<polyline points="20 6 9 17 4 12"/>',
+      Download: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/>',
+      Upload: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/>',
+      LineChart: '<path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/>',
+      Cloud: '<path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/>',
+      CloudUpload: '<path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/><path d="M12 12v9"/><path d="m16 16-4-4-4 4"/>',
+      CloudDownload: '<path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/><path d="M12 12v9"/><path d="m8 17 4 4 4-4"/>',
+      Settings: '<path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/>',
+      ChevronDown: '<polyline points="6 9 12 15 18 9"/>',
+      Menu: '<line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/>',
+      Loader2: '<path d="M21 12a9 9 0 1 1-6.219-8.56"/>',
+      ArrowUpDown: '<path d="m21 16-4 4-4-4"/><path d="M17 20V4"/><path d="m3 8 4-4 4 4"/><path d="M7 4v16"/>',
+      ArrowUp: '<path d="m5 12 7-7 7 7"/><path d="M12 19V5"/>',
+      ArrowDown: '<path d="M12 5v14"/><path d="m19 12-7 7-7-7"/>',
+      RotateCcw: '<path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/>',
+      Lightbulb: '<path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.9 1.2 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/>',
+      CheckSquare: '<rect width="18" height="18" x="3" y="3" rx="2"/><path d="m9 12 2 2 4-4"/>',
+      Star: '<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>',
+      Trash2: '<path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/>',
+      X: '<line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line>',
+      Heart: '<path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/>'
+    };
+    const IconComponent = ({ name, size=24, className="" }) => <svg dangerouslySetInnerHTML={{__html: ICONS[name]}} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} />;
+    const Icon = IconComponent;
+
+    // --- データ群 ---
+    const ST_NAMES = "アラマキ ミナト_荒牧 湊,イシバシ アラタ_石橋 新汰,イトウ タイシ_伊藤 大志,イマコガ サイト_今古賀 采歩,オオノ ソウスケ_大野 颯佑,カイヤ エイスケ_海谷 瑛介,キムラ アラタ_木村 彰汰,クロヒジ ショウ_黒肥地 憧,コガ ヒカル_古賀 光,サカタ オウスケ_坂田 桜助,サカニシ トクマ_坂西 徳馬,シノザキ コウダイ_篠崎 晃大,シマオ ハルマ_島雄 悠,シモセ ナギサ_下瀬 渚,ナガウラ マサト_永浦 正都,マツバ ケイイチ_松葉 圭一,ヤカベ トモキ_矢賀部 友喜,ヨシダ ワタル_吉田 渉,アラキ エミカ_荒木 咲蘭,キタハラ ヒナキ_北原 妃那葵,サトウ ミソラ_佐藤 美空,サワダ アイナ_澤田 愛奈,シバタ レミ_柴田 玲迪,シンムラ アヤカ_新村 彩華,タナカ チヒロ_田中 千尋,ツイジ サキ_築地 咲希,ツカモト マイ_塚本 真衣,ツバキ サラ_椿 咲良,ナカムラ アイカ_中村 碧花,ノジリ カンナ_野尻 かんな,ヒグマ ナナミ_日隈 菜々美,フジシマ アコ_藤嶋 亜子,ミヤザキ サホ_宮崎 咲帆,ムラカミ ココ_村上 瑚々,ヨシトミ アカリ_吉冨 朱莉".split(',');
+    const INITIAL_STUDENTS = ST_NAMES.map((s,i)=>{const [k,n]=s.split('_');return{id:i+1,number:i+1,name:n,kana:k}});
+
+    const RECORD_TYPES = { interview:{label:'面談',color:'bg-blue-100 text-blue-800'}, parent:{label:'保護者',color:'bg-green-100 text-green-800'}, trouble:{label:'トラブル',color:'bg-red-100 text-red-800'}, observation:{label:'普段の様子',color:'bg-slate-100 text-slate-800'} };
+    const TEST_TERMS = [{id:'grade1_term3_end',name:'中1 3学期末'},{id:'term1_mid',name:'1学期中間'},{id:'term1_end',name:'1学期期末'},{id:'term2_mid',name:'2学期中間'},{id:'term2_end',name:'2学期期末'},{id:'term3_end',name:'3学期学年末'}];
+    const MOCK_EXAMS = [{id:'grade1_mock3',name:'中1 第3回学推'},{id:'mock1',name:'第1回 学推'},{id:'mock2',name:'第2回 学推'},{id:'mock3',name:'第3回 学推'}];
+    const IDEA_TYPES = { book_video:{label:'本・動画',color:'bg-blue-100 text-blue-800'}, my_idea:{label:'アイデア',color:'bg-emerald-100 text-emerald-800'}, good_word:{label:'いい言葉',color:'bg-amber-100 text-amber-800'}, others:{label:'その他',color:'bg-slate-100 text-slate-800'} };
+    const INC_TYPES = ['本人面談', '保護者連絡・面談', '関係生徒聴取', '家庭訪問', 'その他'];
+
+    // --- 共通フック・関数 ---
+    const expCSV = (fname, txt) => { const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob(["\uFEFF"+txt],{type:'text/csv'})); a.download=fname; a.click(); };
+    const impCSV = (file, cb) => { if(!file)return; const r=new FileReader(); r.onload=e=>cb(e.target.result.split(/\r\n|\n/).slice(1).filter(x=>x.trim())); r.readAsText(file); };
+    const parseCSVLine = (text) => { const res=[]; let cur=''; let inQ=false; for(let i=0;i<text.length;i++){ const c=text[i]; if(inQ){ if(c==='"'){ if(i+1<text.length&&text[i+1]==='"'){ cur+='"';i++; }else{ inQ=false; } }else{ cur+=c; } }else{ if(c==='"'){ inQ=true; }else if(c===','){ res.push(cur);cur=''; }else{ cur+=c; } } } res.push(cur); return res; };
+    const useSort = (init) => { const [s, setS] = useState({k:init, d:'asc'}); return [s, k=>setS({k, d:s.k===k&&s.d==='desc'?'asc':'desc'}), ()=>setS({k:init,d:'asc'})]; };
+    const SortIcon = ({s, k}) => <Icon name={s.k!==k ? "ArrowUpDown" : s.d==='asc'?"ArrowUp":"ArrowDown"} size={10} className="text-blue-500 ml-1 inline" />;
+
+    // --- Components ---
+    function NavItem({ icon, label, active, onClick }) {
+      return <button onClick={onClick} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-sm font-bold ${active ? 'bg-blue-50 text-blue-700 shadow-sm border border-blue-100' : 'text-slate-600 hover:bg-slate-50'}`}>{icon} {label}</button>;
+    }
+
+    function EventForm({ onSave, initialData, isEditing, onCancel }) {
+      const [event, setEvent] = useState({ title: '', date: new Date().toISOString().split('T')[0], content: '' });
+      useEffect(() => { if (initialData) setEvent(initialData); else setEvent({ title: '', date: new Date().toISOString().split('T')[0], content: '' }); }, [initialData]);
+      const handleSubmit = (e) => { e.preventDefault(); if (!event.title.trim() || !event.content.trim()) return; onSave(event); };
+
       return (
-        <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-          {icons[name]}
-        </svg>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="flex gap-4">
+            <div className="flex-1"><label className="block text-sm font-bold text-slate-600 mb-1">出来事のタイトル</label><input type="text" required className="w-full p-3 bg-slate-50 border rounded-xl focus:ring-2 focus:ring-blue-500" value={event.title} onChange={e => setEvent({...event, title: e.target.value})} /></div>
+            <div className="w-48"><label className="block text-sm font-bold text-slate-600 mb-1">日付</label><input type="date" required className="w-full p-3 bg-slate-50 border rounded-xl focus:ring-2 focus:ring-blue-500" value={event.date} onChange={e => setEvent({...event, date: e.target.value})} /></div>
+          </div>
+          <div><label className="block text-sm font-bold text-slate-600 mb-1">振り返り・所感</label><textarea required className="w-full p-4 bg-slate-50 border rounded-xl min-h-[120px] focus:ring-2 focus:ring-blue-500" value={event.content} onChange={e => setEvent({...event, content: e.target.value})} /></div>
+          <div className="flex justify-end gap-2">
+            {isEditing && <button type="button" onClick={onCancel} className="flex items-center gap-2 px-4 py-2 bg-slate-100 text-slate-600 rounded-xl font-bold text-sm hover:bg-slate-200"><Icon name="X" size={18} /> キャンセル</button>}
+            <button type="submit" className="flex items-center gap-2 px-6 py-2 bg-slate-800 text-white rounded-xl font-bold text-sm hover:bg-slate-700"><Icon name="Save" size={18} /> {isEditing ? "更新する" : "記録を保存"}</button>
+          </div>
+        </form>
+      );
+    }
+
+    const PrinciplesView = ({ principles, setPrinciples, showToast, confirmDialog }) => {
+      const [nP, setNP] = useState(''); const [eId, setEId] = useState(null);
+      const save = e => { e.preventDefault(); if(!nP.trim()) return; if(eId){ setPrinciples(p=>p.map(x=>x.id===eId?{...x,content:nP}:x)); setEId(null); showToast("更新しました"); }else{ setPrinciples(p=>[{id:Date.now(),content:nP,createdAt:Date.now()},...p]); showToast("追加しました"); } setNP(''); };
+      const del = id => confirmDialog("この指針・心構えを削除しますか？", () => { setPrinciples(p=>p.filter(x=>x.id!==id)); if(eId===id) {setEId(null); setNP('');} showToast("削除しました"); });
+      return (
+        <div className="max-w-4xl mx-auto">
+          <h2 className="text-2xl font-bold mb-6">クラスの指針・心構え</h2>
+          <div className={`bg-white p-6 rounded-xl border mb-8 ${eId?'border-blue-400 ring-2 ring-blue-50':''}`}><form onSubmit={save} className="space-y-4"><textarea required placeholder="こんなクラスにしたい、大切な心構えなど..." className="w-full p-4 bg-slate-50 border rounded-xl min-h-[100px] focus:ring-2 focus:ring-blue-500" value={nP} onChange={e=>setNP(e.target.value)} /><div className="flex justify-end gap-2">{eId&&<button type="button" onClick={()=>{setEId(null);setNP('')}} className="px-4 py-2 bg-slate-100 rounded text-sm font-bold">キャンセル</button>}<button type="submit" className="px-6 py-2 bg-slate-800 text-white rounded text-sm font-bold">{eId?"更新":"追加"}</button></div></form></div>
+          <div className="space-y-4">{principles.map(p=>(<div key={p.id} className="bg-white p-5 rounded-xl border relative group"><div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 flex gap-1"><button onClick={()=>{setNP(p.content);setEId(p.id);window.scrollTo(0,0)}} className="p-1 hover:text-blue-500"><Icon name="Edit3" size={16}/></button><button onClick={()=>del(p.id)} className="p-1 hover:text-red-500"><Icon name="Trash2" size={16}/></button></div><p className="whitespace-pre-wrap text-slate-700 text-sm pr-12">{p.content}</p></div>))}</div>
+        </div>
       );
     };
 
-    // === 初期データ ===
-    const INITIAL_STUDENTS = [
-      { id: 1, number: 1, name: '荒牧 湊', kana: 'アラマキ ミナト', gender: 'M' },
-      { id: 2, number: 2, name: '石橋 新汰', kana: 'イシバシ アラタ', gender: 'M' },
-      { id: 3, number: 3, name: '伊藤 大志', kana: 'イトウ タイシ', gender: 'M' },
-      { id: 4, number: 4, name: '今古賀 采歩', kana: 'イマコガ サイト', gender: 'M' },
-      { id: 5, number: 5, name: '大野 颯佑', kana: 'オオノ ソウスケ', gender: 'M' },
-      { id: 6, number: 6, name: '海谷 瑛介', kana: 'カイヤ エイスケ', gender: 'M' },
-      { id: 7, number: 7, name: '木村 彰汰', kana: 'キムラ アラタ', gender: 'M' },
-      { id: 8, number: 8, name: '黒肥地 憧', kana: 'クロヒジ ショウ', gender: 'M' },
-      { id: 9, number: 9, name: '古賀 光', kana: 'コガ ヒカル', gender: 'M' },
-      { id: 10, number: 10, name: '坂田 桜助', kana: 'サカタ オウスケ', gender: 'M' },
-      { id: 11, number: 11, name: '坂西 徳馬', kana: 'サカニシ トクマ', gender: 'M' },
-      { id: 12, number: 12, name: '篠崎 晃大', kana: 'シノザキ コウダイ', gender: 'M' },
-      { id: 13, number: 13, name: '島雄 悠', kana: 'シマオ ハルマ', gender: 'M' },
-      { id: 14, number: 14, name: '下瀬 渚', kana: 'シモセ ナギサ', gender: 'M' },
-      { id: 15, number: 15, name: '永浦 正都', kana: 'ナガウラ マサト', gender: 'M' },
-      { id: 16, number: 16, name: '松葉 圭一', kana: 'マツバ ケイイチ', gender: 'M' },
-      { id: 17, number: 17, name: '矢賀部 友喜', kana: 'ヤカベ トモキ', gender: 'M' },
-      { id: 18, number: 18, name: '吉田 渉', kana: 'ヨシダ ワタル', gender: 'M' },
-      { id: 19, number: 19, name: '荒木 咲蘭', kana: 'アラキ エミカ', gender: 'F' },
-      { id: 20, number: 20, name: '北原 妃那葵', kana: 'キタハラ ヒナキ', gender: 'F' },
-      { id: 21, number: 21, name: '佐藤 美空', kana: 'サトウ ミソラ', gender: 'F' },
-      { id: 22, number: 22, name: '澤田 愛奈', kana: 'サワダ アイナ', gender: 'F' },
-      { id: 23, number: 23, name: '柴田 玲迪', kana: 'シバタ レミ', gender: 'F' },
-      { id: 24, number: 24, name: '新村 彩華', kana: 'シンムラ アヤカ', gender: 'F' },
-      { id: 25, number: 25, name: '田中 千尋', kana: 'タナカ チヒロ', gender: 'F' },
-      { id: 26, number: 26, name: '築地 咲希', kana: 'ツイジ サキ', gender: 'F' },
-      { id: 27, number: 27, name: '塚本 真衣', kana: 'ツカモト マイ', gender: 'F' },
-      { id: 28, number: 28, name: '椿 咲良', kana: 'ツバキ サラ', gender: 'F' },
-      { id: 29, number: 29, name: '中村 碧花', kana: 'ナカムラ アイカ', gender: 'F' },
-      { id: 30, number: 30, name: '野尻 かんな', kana: 'ノジリ カンナ', gender: 'F' },
-      { id: 31, number: 31, name: '日隈 菜々美', kana: 'ヒグマ ナナミ', gender: 'F' },
-      { id: 32, number: 32, name: '藤嶋 亜子', kana: 'フジシマ アコ', gender: 'F' },
-      { id: 33, number: 33, name: '宮崎 咲帆', kana: 'ミヤザキ サホ', gender: 'F' },
-      { id: 34, number: 34, name: '村上 瑚々', kana: 'ムラカミ ココ', gender: 'F' },
-      { id: 35, number: 35, name: '吉冨 朱莉', kana: 'ヨシトミ アカリ', gender: 'F' }
-    ];
-
-    const RECORD_TYPES = {
-      interview: { label: '本人面談', color: 'bg-blue-100 text-blue-800 border-blue-200', icon: 'MessageCircle' },
-      parent: { label: '保護者連絡・面談', color: 'bg-green-100 text-green-800 border-green-200', icon: 'Phone' },
-      trouble: { label: 'トラブル対応', color: 'bg-red-100 text-red-800 border-red-200', icon: 'AlertTriangle' },
-      observation: { label: '普段の様子', color: 'bg-slate-100 text-slate-800 border-slate-200', icon: 'BookOpen' },
+    const StudentDetail = ({ student, records, studentGrades, studentMockGrades, details, onUpdateDetails, onSaveRecord, onDeleteRecord, onBack, isPrint, confirmDialog }) => {
+      const [nR, setNR] = useState({ date: new Date().toISOString().split('T')[0], type: 'observation', content: '' });
+      const [eRId, setERId] = useState(null); const [isE, setIsE] = useState(false); const [eD, setED] = useState({});
+      useEffect(() => setED(details), [details]);
+      const saveR = (e) => { e.preventDefault(); if(!nR.content) return; onSaveRecord(nR, eRId); setNR({date:new Date().toISOString().split('T')[0], type:'observation', content:''}); setERId(null); };
+      const fields = [ { k:'scholarship',l:'奨学生',o:['','奨A','奨B','奨C'] }, { k:'club',l:'部活' }, { k:'committee',l:'係・委員' }, { k:'event_role',l:'行事係' }, { k:'strong_subject',l:'得意' }, { k:'weak_subject',l:'苦手' }, { k:'dream',l:'夢' }, { k:'university',l:'志望校' }, { k:'friends',l:'友達' }, { k:'others',l:'他' } ];
+      return (
+        <div className="max-w-4xl mx-auto print:max-w-none">
+          {!isPrint && <div className="print-hide mb-6 flex gap-4 justify-between"><button onClick={onBack} className="flex items-center text-slate-500 hover:bg-white px-4 py-2 rounded-lg"><Icon name="ArrowLeft" size={18} className="mr-2"/> 生徒一覧</button><button onClick={()=>window.print()} className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-bold"><Icon name="Printer" size={18}/> PDF出力</button></div>}
+          <div className="bg-white p-8 rounded-2xl shadow-sm border mb-8 print-no-shadow print:border-b-2 print:border-black print:p-0 print:mb-4">
+            <div className="flex justify-between mb-2"><span className="font-bold text-slate-400">出席番号 {student.number}番</span>{isPrint && <span className="text-xs font-bold border px-2 py-0.5 rounded">2年A組</span>}</div>
+            <div><div className="text-slate-500 mb-1">{student.kana}</div><h2 className="text-3xl font-bold flex gap-3 items-center">{student.name} {details.scholarship && <span className="text-sm px-2 py-1 bg-amber-100 text-amber-700 rounded border border-amber-200">{details.scholarship}</span>}</h2></div>
+          </div>
+          <div className="bg-white p-6 rounded-2xl shadow-sm border mb-8 print-no-shadow print:p-0">
+            <div className="flex justify-between border-b pb-3 mb-4"><h3 className="font-bold flex gap-2 items-center"><Icon name="ClipboardList" size={20} className="text-indigo-600 print-hide"/> 詳細情報</h3>{!isPrint && !isE && <button onClick={()=>setIsE(true)} className="px-3 py-1.5 bg-slate-100 rounded-lg text-sm font-bold flex gap-1 print-hide"><Icon name="Edit3" size={16}/> 編集</button>}{!isPrint && isE && <button onClick={()=>{onUpdateDetails(eD);setIsE(false)}} className="px-3 py-1.5 bg-indigo-600 text-white rounded-lg text-sm font-bold flex gap-1 print-hide"><Icon name="Check" size={16}/> 保存</button>}</div>
+            <div className="grid grid-cols-2 gap-4">{fields.map(f => (<div key={f.k} className="flex flex-col"><span className="text-xs font-bold text-slate-500 mb-1">{f.l}</span>{isE ? (f.o ? <select className="p-2 bg-slate-50 border rounded" value={eD[f.k]||''} onChange={e=>setED({...eD, [f.k]:e.target.value})}>{f.o.map(o=><option key={o} value={o}>{o||'未選択'}</option>)}</select> : <input type="text" className="p-2 bg-slate-50 border rounded" value={eD[f.k]||''} onChange={e=>setED({...eD, [f.k]:e.target.value})} />) : <span className="p-2 bg-slate-50 rounded min-h-[36px] print:bg-transparent print:p-0">{details[f.k]||'-'}</span>}</div>))}</div>
+          </div>
+          <div className="bg-white p-6 rounded-2xl shadow-sm border mb-8 print-no-shadow print:p-0">
+            <h3 className="font-bold border-b pb-3 mb-4 flex gap-2"><Icon name="FileSpreadsheet" size={20} className="text-blue-600 print-hide"/> 定期考査成績</h3>
+            <div className="overflow-x-auto mb-8"><table className="w-full text-sm text-left"><thead className="bg-slate-50 border-b"><tr><th className="p-3">考査名</th><th className="p-3 text-center">国</th><th className="p-3 text-center">社</th><th className="p-3 text-center">数</th><th className="p-3 text-center">理</th><th className="p-3 text-center">英</th><th className="p-3 text-center bg-blue-50/50 print:bg-transparent">総点</th><th className="p-3 text-center">平均</th><th className="p-3 text-center">級位</th><th className="p-3 text-center">年位</th></tr></thead><tbody className="divide-y">{TEST_TERMS.map(t => { const g = studentGrades[t.id]; return <tr key={t.id} className="hover:bg-slate-50"><td className="p-3 font-medium">{t.name}</td><td className="p-3 text-center">{g?.kokugo||'-'}</td><td className="p-3 text-center">{g?.shakai||'-'}</td><td className="p-3 text-center">{g?.sugaku||'-'}</td><td className="p-3 text-center">{g?.rika||'-'}</td><td className="p-3 text-center">{g?.eigo||'-'}</td><td className="p-3 text-center font-bold bg-blue-50/30 print:bg-transparent">{g?.total||'-'}</td><td className="p-3 text-center">{g?.average||'-'}</td><td className="p-3 text-center">{g?.class_rank||'-'}</td><td className="p-3 text-center">{g?.grade_rank||'-'}</td></tr> })}</tbody></table></div>
+            <h3 className="font-bold border-b pb-3 mb-4 flex gap-2"><Icon name="LineChart" size={20} className="text-blue-600 print-hide"/> 模試成績</h3>
+            <div className="overflow-x-auto"><table className="w-full text-sm text-left"><thead className="bg-slate-50 border-b"><tr><th className="p-3" rowSpan="2">模試名</th><th className="p-2 text-center bg-blue-50/50 print:bg-transparent" colSpan="2">総合</th><th className="p-2 text-center" colSpan="2">国語</th><th className="p-2 text-center" colSpan="2">数学</th><th className="p-2 text-center" colSpan="2">英語</th></tr><tr><th className="p-2 text-center text-xs bg-blue-50/50">得点</th><th className="p-2 text-center text-xs bg-blue-50/50 text-blue-700">偏差値</th><th className="p-2 text-center text-xs">得点</th><th className="p-2 text-center text-xs">偏差値</th><th className="p-2 text-center text-xs">得点</th><th className="p-2 text-center text-xs">偏差値</th><th className="p-2 text-center text-xs">得点</th><th className="p-2 text-center text-xs">偏差値</th></tr></thead><tbody className="divide-y">{MOCK_EXAMS.map(m => { const mg = studentMockGrades[m.id]; return <tr key={m.id} className="hover:bg-slate-50"><td className="p-3 font-medium">{m.name}</td><td className="p-2 text-center font-bold bg-blue-50/30 print:bg-transparent">{mg?.total_score||'-'}</td><td className="p-2 text-center font-bold bg-blue-50/30 text-blue-700 print:text-black print:bg-transparent">{mg?.total_dev||'-'}</td><td className="p-2 text-center">{mg?.kokugo_score||'-'}</td><td className="p-2 text-center text-slate-500">{mg?.kokugo_dev||'-'}</td><td className="p-2 text-center">{mg?.sugaku_score||'-'}</td><td className="p-2 text-center text-slate-500">{mg?.sugaku_dev||'-'}</td><td className="p-2 text-center">{mg?.eigo_score||'-'}</td><td className="p-2 text-center text-slate-500">{mg?.eigo_dev||'-'}</td></tr> })}</tbody></table></div>
+          </div>
+          {!isPrint && (
+            <div className={`bg-white p-6 rounded-2xl shadow-sm border mb-8 print-hide ${eRId ? 'border-blue-400 ring-2 ring-blue-50' : ''}`}>
+              <h3 className="font-bold mb-4 flex gap-2"><Icon name={eRId?"Edit3":"Plus"} size={20} className="text-blue-600"/> {eRId?"記録を編集":"新しい記録"}</h3>
+              <form onSubmit={saveR} className="space-y-4">
+                <div className="flex gap-4"><input type="date" required className="p-3 bg-slate-50 border rounded w-40 focus:ring-2 focus:ring-blue-500" value={nR.date} onChange={e=>setNR({...nR, date:e.target.value})} /><select className="p-3 bg-slate-50 border rounded flex-1 focus:ring-2 focus:ring-blue-500" value={nR.type} onChange={e=>setNR({...nR, type:e.target.value})}>{Object.entries(RECORD_TYPES).map(([k,v])=><option key={k} value={k}>{v.label}</option>)}</select></div>
+                <textarea required className="w-full p-4 bg-slate-50 border rounded h-24 focus:ring-2 focus:ring-blue-500" value={nR.content} onChange={e=>setNR({...nR, content:e.target.value})} placeholder="内容..." />
+                <div className="flex justify-end gap-2">{eRId && <button type="button" onClick={()=>{setERId(null);setNR({date:new Date().toISOString().split('T')[0], type:'observation', content:''})}} className="px-4 py-2 bg-slate-100 rounded text-sm font-bold">キャンセル</button>}<button type="submit" className="px-6 py-2 bg-slate-800 text-white rounded text-sm font-bold">{eRId?"更新":"保存"}</button></div>
+              </form>
+            </div>
+          )}
+          <div>
+            <h3 className="font-bold border-b pb-2 mb-4">これまでの記録</h3>
+            <div className="space-y-4">
+              {records.length > 0 ? records.map(r => {
+                const t = RECORD_TYPES[r.type];
+                return <div key={r.id} className="flex gap-4 group"><div className="w-24 shrink-0 text-sm text-slate-500 font-bold pt-2">{r.date}</div><div className="flex-1 bg-white p-4 rounded-xl border relative"><div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 print-hide flex gap-1"><button onClick={()=>{setNR({date:r.date,type:r.type,content:r.content});setERId(r.id);window.scrollTo(0,0)}} className="p-1 hover:text-blue-600"><Icon name="Edit3" size={16}/></button><button onClick={()=>onDeleteRecord(r.id)} className="p-1 hover:text-red-500"><Icon name="Trash2" size={16}/></button></div><span className={`inline-flex items-center gap-1 text-xs px-2 py-1 rounded font-bold ${t.color}`}><Icon name={t.icon} size={12} className="print-hide"/> {t.label}</span><p className="mt-2 whitespace-pre-wrap text-sm">{r.content}</p></div></div>
+              }) : <p className="text-slate-500 text-center py-8 print-hide">記録はありません。</p>}
+            </div>
+          </div>
+        </div>
+      );
     };
 
-    const TEST_TERMS = [
-      { id: 'grade1_term3_end', name: '中1 3学期学年末' },
-      { id: 'term1_mid', name: '1学期中間' },
-      { id: 'term1_end', name: '1学期期末' },
-      { id: 'term2_mid', name: '2学期中間' },
-      { id: 'term2_end', name: '2学期期末' },
-      { id: 'term3_end', name: '3学期学年末' }
-    ];
+    const StudentDetailsView = ({ details, setDetails, students, showToast }) => {
+      const ref = useRef(null); const [s, sort] = useSort('number');
+      const cols = [{k:'scholarship',l:'奨学生'},{k:'club',l:'部活'},{k:'committee',l:'係'},{k:'event_role',l:'行事'},{k:'strong_subject',l:'得意'},{k:'weak_subject',l:'苦手'},{k:'dream',l:'夢'},{k:'university',l:'志望校'}];
+      const sorted = [...students].sort((a,b) => {
+        if(s.k==='number') return s.d==='asc'?a.number-b.number:b.number-a.number;
+        if(s.k==='name') return s.d==='asc'?a.kana.localeCompare(b.kana,'ja'):b.kana.localeCompare(a.kana,'ja');
+        const vA=(details[a.id]||{})[s.k]||''; const vB=(details[b.id]||{})[s.k]||''; return s.d==='asc' ? vA.localeCompare(vB) : vB.localeCompare(vA);
+      });
+      const dl = () => {
+        let c = "番,氏名," + cols.map(c=>c.l).join(",") + "\n";
+        students.forEach(st => { const d = details[st.id]||{}; c+=`${st.number},${st.name},${cols.map(col=>`"${(d[col.k]||'').replace(/"/g,'""')}"`).join(",")}\n`; });
+        expCSV("生徒詳細.csv", c);
+      };
+      const ul = e => impCSV(e.target.files[0], lines => {
+        const nD = {...details}; let cnt=0;
+        lines.forEach(l => { const v=parseCSVLine(l); const st=students.find(x=>x.number===parseInt(v[0])); if(st){ nD[st.id]={scholarship:v[2],club:v[3],committee:v[4],event_role:v[5],strong_subject:v[6],weak_subject:v[7],dream:v[8],university:v[9]}; cnt++; } });
+        setDetails(nD); e.target.value=null; showToast(`${cnt}名読込完了`);
+      });
+      return (
+        <div className="max-w-full mx-auto">
+          <div className="flex justify-between items-end mb-6"><h2 className="text-2xl font-bold">生徒詳細情報管理</h2><div className="flex gap-2"><button onClick={dl} className="px-4 py-2 bg-white border rounded shadow-sm text-sm font-bold"><Icon name="Download" size={16} className="inline mr-1"/>CSV出力</button><input type="file" className="hidden" ref={ref} onChange={ul}/><button onClick={()=>ref.current?.click()} className="px-4 py-2 bg-blue-50 border-blue-200 text-blue-700 rounded shadow-sm text-sm font-bold"><Icon name="Upload" size={16} className="inline mr-1"/>CSV読込</button></div></div>
+          <div className="bg-white rounded-xl shadow-sm border overflow-x-auto relative">
+            <table className="w-full text-sm text-left whitespace-nowrap"><thead className="bg-slate-50 border-b"><tr><th className="p-3 w-12 sticky left-0 z-10 bg-slate-50 cursor-pointer" onClick={()=>sort('number')}>番<SortIcon s={s} k="number"/></th><th className="p-3 w-32 sticky left-[48px] z-10 bg-slate-50 cursor-pointer" onClick={()=>sort('name')}>氏名<SortIcon s={s} k="name"/></th>{cols.map(c=><th key={c.k} className="p-3 cursor-pointer hover:bg-slate-100" onClick={()=>sort(c.k)}>{c.l}<SortIcon s={s} k={c.k}/></th>)}</tr></thead><tbody className="divide-y">{sorted.map(st=>{ const d=details[st.id]||{}; return <tr key={st.id} className="hover:bg-slate-50"><td className="p-3 sticky left-0 z-10 bg-white">{st.number}</td><td className="p-3 font-bold sticky left-[48px] z-10 bg-white">{st.name}</td>{cols.map(c=><td key={c.k} className={`p-3 truncate max-w-[150px] ${c.k==='scholarship'?'text-amber-600 font-bold':''}`}>{d[c.k]||'-'}</td>)}</tr>})}</tbody></table>
+          </div>
+        </div>
+      );
+    }
 
-    const MOCK_EXAMS = [
-      { id: 'grade1_mock3', name: '中1 第3回学力推移調査' },
-      { id: 'mock1', name: '第1回 学力推移調査' },
-      { id: 'mock2', name: '第2回 学力推移調査' },
-      { id: 'mock3', name: '第3回 学力推移調査' }
-    ];
+    function GradesView({ grades, setGrades, students, terms, showToast }) {
+      const [sel, setSel] = useState(terms[0].id); const [s, sort] = useSort('number'); const r = useRef(null);
+      const sorted = [...students].sort((a,b)=>{
+        if(s.k==='number') return s.d==='asc'?a.number-b.number:b.number-a.number;
+        if(s.k==='name') return s.d==='asc'?a.kana.localeCompare(b.kana,'ja'):b.kana.localeCompare(a.kana,'ja');
+        const vA=Number((grades[sel]?.[a.id]||{})[s.k]||-Infinity); const vB=Number((grades[sel]?.[b.id]||{})[s.k]||-Infinity); return s.d==='asc'?vA-vB:vB-vA;
+      });
+      const dl = () => {
+        let c = "番,氏名,国,社,数,理,英,総,平均,級位,年位\n";
+        students.forEach(st=>{ const g=grades[sel]?.[st.id]||{}; c+=`${st.number},${st.name},${g.kokugo||''},${g.shakai||''},${g.sugaku||''},${g.rika||''},${g.eigo||''},${g.total||''},${g.average||''},${g.class_rank||''},${g.grade_rank||''}\n`;});
+        expCSV(`${terms.find(t=>t.id===sel).name}成績.csv`, c);
+      };
+      const ul = e => impCSV(e.target.files[0], lines => {
+        const nG={...(grades[sel]||{})}; let cnt=0;
+        lines.forEach(v=>{ const st=students.find(x=>x.number===parseInt(v.split(',')[0])); if(st){ const a=v.split(','); nG[st.id]={kokugo:a[2],shakai:a[3],sugaku:a[4],rika:a[5],eigo:a[6],total:a[7],average:a[8],class_rank:a[9],grade_rank:a[10]}; cnt++; }});
+        setGrades(p=>({...p,[sel]:nG})); e.target.value=null; showToast(`${cnt}名読込`);
+      });
+      const thC = "p-3 cursor-pointer hover:bg-slate-100 text-center";
+      return (
+        <div className="max-w-5xl mx-auto">
+          <div className="flex justify-between mb-4"><h2 className="text-2xl font-bold">定期考査</h2><div className="flex gap-2"><button onClick={dl} className="px-4 py-1.5 bg-white border rounded text-sm font-bold"><Icon name="Download" size={16} className="inline mr-1"/>CSV出力</button><input type="file" className="hidden" ref={r} onChange={ul}/><button onClick={()=>r.current?.click()} className="px-4 py-1.5 bg-blue-50 border-blue-200 text-blue-700 rounded text-sm font-bold"><Icon name="Upload" size={16} className="inline mr-1"/>CSV読込</button></div></div>
+          <div className="bg-white p-6 rounded-xl border">
+            <div className="mb-4 flex gap-2">{terms.map(t=><button key={t.id} onClick={()=>setSel(t.id)} className={`px-4 py-2 rounded text-sm font-bold ${sel===t.id?'bg-blue-600 text-white':'bg-slate-100'}`}>{t.name}</button>)}</div>
+            <div className="overflow-x-auto relative border rounded"><table className="w-full text-sm whitespace-nowrap"><thead className="bg-slate-50 border-b"><tr>
+              <th className="p-3 w-12 sticky left-0 z-10 bg-slate-50 text-center cursor-pointer" onClick={()=>sort('number')}>番<SortIcon s={s} k="number"/></th><th className="p-3 w-32 sticky left-[48px] z-10 bg-slate-50 cursor-pointer" onClick={()=>sort('name')}>氏名<SortIcon s={s} k="name"/></th>
+              {['kokugo','shakai','sugaku','rika','eigo'].map(k=><th key={k} className={thC} onClick={()=>sort(k)}>{k==='kokugo'?'国':k==='shakai'?'社':k==='sugaku'?'数':k==='rika'?'理':'英'}<SortIcon s={s} k={k}/></th>)}
+              <th className={`${thC} bg-blue-50`} onClick={()=>sort('total')}>総点<SortIcon s={s} k="total"/></th><th className={thC} onClick={()=>sort('average')}>平均<SortIcon s={s} k="average"/></th><th className={thC} onClick={()=>sort('class_rank')}>級位<SortIcon s={s} k="class_rank"/></th><th className={thC} onClick={()=>sort('grade_rank')}>年位<SortIcon s={s} k="grade_rank"/></th>
+            </tr></thead><tbody className="divide-y">{sorted.map(st=>{ const g=grades[sel]?.[st.id]||{}; return <tr key={st.id} className="hover:bg-slate-50"><td className="p-3 sticky left-0 z-10 bg-white text-center">{st.number}</td><td className="p-3 font-bold sticky left-[48px] z-10 bg-white">{st.name}</td><td className="p-3 text-center">{g.kokugo||'-'}</td><td className="p-3 text-center">{g.shakai||'-'}</td><td className="p-3 text-center">{g.sugaku||'-'}</td><td className="p-3 text-center">{g.rika||'-'}</td><td className="p-3 text-center">{g.eigo||'-'}</td><td className="p-3 text-center font-bold bg-blue-50/50">{g.total||'-'}</td><td className="p-3 text-center">{g.average||'-'}</td><td className="p-3 text-center">{g.class_rank||'-'}</td><td className="p-3 text-center">{g.grade_rank||'-'}</td></tr> })}</tbody></table></div>
+          </div>
+        </div>
+      );
+    }
 
-    const IDEA_TYPES = {
-      book_video: { label: '本・動画から', color: 'bg-blue-100 text-blue-800 border-blue-200' },
-      my_idea: { label: '自分のアイデア', color: 'bg-emerald-100 text-emerald-800 border-emerald-200' },
-      good_word: { label: 'いい言葉', color: 'bg-amber-100 text-amber-800 border-amber-200' },
-      others: { label: 'その他', color: 'bg-slate-100 text-slate-800 border-slate-200' }
-    };
+    function MockGradesView({ mockGrades, setMockGrades, students, mocks, showToast }) {
+      const [sel, setSel] = useState(mocks[0].id); const [s, sort] = useSort('number'); const r = useRef(null);
+      const sorted = [...students].sort((a,b)=>{
+        if(s.k==='number') return s.d==='asc'?a.number-b.number:b.number-a.number;
+        if(s.k==='name') return s.d==='asc'?a.kana.localeCompare(b.kana,'ja'):b.kana.localeCompare(a.kana,'ja');
+        const vA=Number((mockGrades[sel]?.[a.id]||{})[s.k]||-Infinity); const vB=Number((mockGrades[sel]?.[b.id]||{})[s.k]||-Infinity); return s.d==='asc'?vA-vB:vB-vA;
+      });
+      const dl = () => {
+        let c = "番,氏名,総合点,総合偏,国点,国偏,数点,数偏,英点,英偏\n";
+        students.forEach(st=>{ const g=mockGrades[sel]?.[st.id]||{}; c+=`${st.number},${st.name},${g.total_score||''},${g.total_dev||''},${g.kokugo_score||''},${g.kokugo_dev||''},${g.sugaku_score||''},${g.sugaku_dev||''},${g.eigo_score||''},${g.eigo_dev||''}\n`; });
+        expCSV(`${mocks.find(m=>m.id===sel).name}成績.csv`, c);
+      };
+      const ul = e => impCSV(e.target.files[0], lines => {
+        const nG={...(mockGrades[sel]||{})}; let cnt=0;
+        lines.forEach(v=>{ const st=students.find(x=>x.number===parseInt(v.split(',')[0])); if(st){ const a=v.split(','); nG[st.id]={total_score:a[2],total_dev:a[3],kokugo_score:a[4],kokugo_dev:a[5],sugaku_score:a[6],sugaku_dev:a[7],eigo_score:a[8],eigo_dev:a[9]}; cnt++; }});
+        setMockGrades(p=>({...p,[sel]:nG})); e.target.value=null; showToast(`${cnt}名読込`);
+      });
+      const thC = "p-2 cursor-pointer hover:bg-slate-100 text-center text-xs";
+      return (
+        <div className="max-w-5xl mx-auto">
+          <div className="flex justify-between mb-4"><h2 className="text-2xl font-bold">模試成績</h2><div className="flex gap-2"><button onClick={dl} className="px-4 py-1.5 bg-white border rounded text-sm font-bold"><Icon name="Download" size={16} className="inline mr-1"/>CSV出力</button><input type="file" className="hidden" ref={r} onChange={ul}/><button onClick={()=>r.current?.click()} className="px-4 py-1.5 bg-blue-50 border-blue-200 text-blue-700 rounded text-sm font-bold"><Icon name="Upload" size={16} className="inline mr-1"/>CSV読込</button></div></div>
+          <div className="bg-white p-6 rounded-xl border">
+            <div className="mb-4 flex gap-2">{mocks.map(t=><button key={t.id} onClick={()=>setSel(t.id)} className={`px-4 py-2 rounded text-sm font-bold ${sel===t.id?'bg-blue-600 text-white':'bg-slate-100'}`}>{t.name}</button>)}</div>
+            <div className="overflow-x-auto relative border rounded"><table className="w-full text-sm whitespace-nowrap"><thead className="bg-slate-50 border-b"><tr>
+              <th className="p-3 w-12 sticky left-0 z-10 bg-slate-50 text-center cursor-pointer" rowSpan="2" onClick={()=>sort('number')}>番<SortIcon s={s} k="number"/></th><th className="p-3 w-32 sticky left-[48px] z-10 bg-slate-50 cursor-pointer" rowSpan="2" onClick={()=>sort('name')}>氏名<SortIcon s={s} k="name"/></th>
+              <th className="p-2 text-center bg-blue-50 border-x" colSpan="2">総合</th><th className="p-2 text-center border-r" colSpan="2">国語</th><th className="p-2 text-center border-r" colSpan="2">数学</th><th className="p-2 text-center" colSpan="2">英語</th>
+            </tr><tr><th className={`${thC} bg-blue-50 border-l`} onClick={()=>sort('total_score')}>点<SortIcon s={s} k="total_score"/></th><th className={`${thC} bg-blue-50 border-r`} onClick={()=>sort('total_dev')}>偏<SortIcon s={s} k="total_dev"/></th><th className={thC} onClick={()=>sort('kokugo_score')}>点<SortIcon s={s} k="kokugo_score"/></th><th className={`${thC} border-r`} onClick={()=>sort('kokugo_dev')}>偏<SortIcon s={s} k="kokugo_dev"/></th><th className={thC} onClick={()=>sort('sugaku_score')}>点<SortIcon s={s} k="sugaku_score"/></th><th className={`${thC} border-r`} onClick={()=>sort('sugaku_dev')}>偏<SortIcon s={s} k="sugaku_dev"/></th><th className={thC} onClick={()=>sort('eigo_score')}>点<SortIcon s={s} k="eigo_score"/></th><th className={thC} onClick={()=>sort('eigo_dev')}>偏<SortIcon s={s} k="eigo_dev"/></th></tr></thead>
+            <tbody className="divide-y">{sorted.map(st=>{ const g=mockGrades[sel]?.[st.id]||{}; return <tr key={st.id} className="hover:bg-slate-50"><td className="p-2 sticky left-0 z-10 bg-white text-center">{st.number}</td><td className="p-2 font-bold sticky left-[48px] z-10 bg-white">{st.name}</td><td className="p-2 text-center bg-blue-50/30 border-l font-bold">{g.total_score||'-'}</td><td className="p-2 text-center bg-blue-50/30 border-r text-blue-600 font-bold">{g.total_dev||'-'}</td><td className="p-2 text-center">{g.kokugo_score||'-'}</td><td className="p-2 text-center border-r text-slate-500">{g.kokugo_dev||'-'}</td><td className="p-2 text-center">{g.sugaku_score||'-'}</td><td className="p-2 text-center border-r text-slate-500">{g.sugaku_dev||'-'}</td><td className="p-2 text-center">{g.eigo_score||'-'}</td><td className="p-2 text-center text-slate-500">{g.eigo_dev||'-'}</td></tr> })}</tbody></table></div>
+          </div>
+        </div>
+      );
+    }
 
-    const INCIDENT_EVENT_TYPES = ['本人面談', '保護者連絡・面談', '関係生徒聴取', '家庭訪問', 'その他'];
+    function IncidentsView({ incidents, setIncidents, students, onSelect, showToast, confirmDialog }) {
+      const [nI, setNI] = useState({ title:'', date:new Date().toISOString().split('T')[0], inv:[] }); const [eId, setEId] = useState(null);
+      const save = e => { e.preventDefault(); if(!nI.title) return; if(eId){ setIncidents(p=>p.map(i=>i.id===eId?{...i,...nI,involvedStudents:nI.inv}:i).sort((a,b)=>new Date(b.date)-new Date(a.date))); setEId(null); showToast("更新しました"); }else{ setIncidents(p=>[{id:Date.now(),...nI,involvedStudents:nI.inv,status:'active',events:[]},...p].sort((a,b)=>new Date(b.date)-new Date(a.date))); showToast("登録しました"); } setNI({title:'',date:new Date().toISOString().split('T')[0],inv:[]}); };
+      const del = (id,e) => { e.stopPropagation(); confirmDialog("事案と関連記録をすべて削除しますか？", () => { setIncidents(p=>p.filter(i=>i.id!==id)); showToast("削除済"); }); };
+      return (
+        <div className="max-w-4xl mx-auto">
+          <h2 className="text-2xl font-bold mb-6">生徒・保護者対応</h2>
+          <div className={`bg-white p-6 rounded-xl border mb-8 ${eId?'border-blue-400 ring-2 ring-blue-50':''}`}>
+            <h3 className="font-bold mb-4 flex items-center gap-2"><Icon name={eId?"Edit3":"Plus"} size={20} className="text-blue-600"/> {eId?"編集":"新規登録"}</h3>
+            <form onSubmit={save} className="space-y-4">
+              <div className="flex gap-4"><input required placeholder="件名" className="flex-[2] p-3 bg-slate-50 border rounded focus:ring-2 focus:ring-blue-500" value={nI.title} onChange={e=>setNI({...nI,title:e.target.value})}/><input type="date" required className="flex-1 p-3 bg-slate-50 border rounded focus:ring-2 focus:ring-blue-500" value={nI.date} onChange={e=>setNI({...nI,date:e.target.value})}/></div>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2 h-40 overflow-y-auto p-2 border bg-slate-50 rounded">{students.map(s=><label key={s.id} className="flex gap-2 items-center text-sm cursor-pointer p-1"><input type="checkbox" checked={nI.inv.includes(s.id)} onChange={()=>{setNI(p=>({...p,inv:p.inv.includes(s.id)?p.inv.filter(x=>x!==s.id):[...p.inv,s.id]}))}}/>{s.number}. {s.name}</label>)}</div>
+              <div className="flex justify-end gap-2">{eId&&<button type="button" onClick={()=>{setEId(null);setNI({title:'',date:new Date().toISOString().split('T')[0],inv:[]})}} className="px-4 py-2 bg-slate-100 rounded text-sm font-bold">キャンセル</button>}<button className="px-6 py-2 bg-blue-600 text-white rounded text-sm font-bold">{eId?"更新":"登録"}</button></div>
+            </form>
+          </div>
+          <div className="space-y-3">{incidents.map(i => (
+            <div key={i.id} onClick={()=>onSelect(i.id)} className={`bg-white p-4 rounded-xl border cursor-pointer group relative ${i.status==='active'?'border-amber-300 ring-2 ring-amber-50':''}`}>
+              <div className="absolute top-4 right-12 opacity-0 group-hover:opacity-100 flex gap-1"><button onClick={e=>{e.stopPropagation();setNI({title:i.title,date:i.date,inv:i.involvedStudents});setEId(i.id);window.scrollTo(0,0)}} className="p-1 hover:text-blue-500"><Icon name="Edit3" size={16}/></button><button onClick={e=>del(i.id,e)} className="p-1 hover:text-red-500"><Icon name="Trash2" size={16}/></button></div>
+              <div className="flex items-center gap-2 mb-2">{i.status==='active'?<span className="text-xs px-2 py-1 bg-amber-100 text-amber-700 rounded font-bold">対応中</span>:<span className="text-xs px-2 py-1 bg-slate-100 rounded font-bold">解決済</span>}<span className="text-xs text-slate-400">{i.date}</span></div>
+              <h4 className="font-bold text-lg mb-2">{i.title}</h4>
+              <div className="flex gap-1 flex-wrap">{i.involvedStudents.map(id=>{const st=students.find(x=>x.id===id);return st?<span key={id} className="text-xs px-2 py-0.5 bg-slate-50 border rounded-full">{st.name}</span>:null})}</div>
+              <Icon name="ChevronRight" className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-300" />
+            </div>
+          ))}</div>
+        </div>
+      );
+    }
 
-    // === メインアプリケーション ===
+    function IncidentDetail({ inc, students, setInc, onBack, onPrint, showToast, confirmDialog }) {
+      const [ev, setEv] = useState({ dt: new Date().toISOString().slice(0,16), ty: INC_TYPES[0], co: '' }); const [eId, setEId] = useState(null);
+      const save = e => { e.preventDefault(); if(!ev.co)return; setInc(p=>p.map(x=>x.id===inc.id?{...x,events:eId?x.events.map(y=>y.id===eId?{...y,datetime:ev.dt,type:ev.ty,content:ev.co}:y):[...(x.events||[]),{id:Date.now(),datetime:ev.dt,type:ev.ty,content:ev.co}]}:x)); setEId(null); setEv({dt:new Date().toISOString().slice(0,16),ty:INC_TYPES[0],co:''}); showToast("保存しました"); };
+      const del = id => confirmDialog("この記録を削除しますか？", () => setInc(p=>p.map(x=>x.id===inc.id?{...x,events:x.events.filter(y=>y.id!==id)}:x)));
+      return (
+        <div className="max-w-4xl mx-auto">
+          <div className="print:hidden mb-6 flex justify-between"><button onClick={onBack} className="text-slate-500 hover:text-blue-500 flex items-center"><Icon name="ArrowLeft" size={18} className="mr-1"/>戻る</button><button onClick={onPrint} className="bg-blue-600 text-white px-4 py-2 rounded shadow text-sm flex gap-2 font-bold"><Icon name="Printer" size={16}/>PDF出力</button></div>
+          <div className={`bg-white p-8 rounded-xl border mb-8 ${inc.status==='active'?'border-amber-300':''}`}><div className="flex justify-between mb-4"><div className="flex items-center gap-3"><span className="bg-slate-100 px-2 py-1 rounded text-xs font-bold">{inc.status==='active'?'対応中':'解決済'}</span><span className="text-slate-500 text-sm font-bold">発生日: {inc.date}</span></div><button onClick={()=>setInc(p=>p.map(x=>x.id===inc.id?{...x,status:inc.status==='active'?'resolved':'active'}:x))} className="text-xs border px-2 py-1 rounded hover:bg-slate-50">{inc.status==='active'?'解決済にする':'対応中に戻す'}</button></div><h2 className="text-2xl font-bold mb-4">{inc.title}</h2><div className="flex gap-2 flex-wrap">{inc.involvedStudents.map(id=>{const st=students.find(x=>x.id===id);return st?<span key={id} className="text-sm px-3 py-1 bg-blue-50 text-blue-800 border-blue-200 border rounded-lg">{st.name}</span>:null})}</div></div>
+          <div className="bg-white p-6 rounded-xl border mb-8"><h3 className="font-bold mb-4 flex gap-2"><Icon name={eId?"Edit3":"Plus"} size={20} className="text-blue-600"/>{eId?"記録編集":"対応追加"}</h3><form onSubmit={save} className="space-y-4"><div className="flex gap-4"><input type="datetime-local" required className="flex-[2] p-3 bg-slate-50 border rounded focus:ring-2 focus:ring-blue-500" value={ev.dt} onChange={e=>setEv({...ev,dt:e.target.value})}/><select className="flex-1 p-3 bg-slate-50 border rounded focus:ring-2 focus:ring-blue-500" value={ev.ty} onChange={e=>setEv({...ev,ty:e.target.value})}>{INC_TYPES.map(t=><option key={t}>{t}</option>)}</select></div><textarea required className="w-full p-4 bg-slate-50 border rounded h-32 focus:ring-2 focus:ring-blue-500" value={ev.co} onChange={e=>setEv({...ev,co:e.target.value})}/><div className="flex justify-end gap-2">{eId&&<button type="button" onClick={()=>{setEId(null);setEv({dt:new Date().toISOString().slice(0,16),ty:INC_TYPES[0],co:''})}} className="px-4 py-2 bg-slate-100 rounded text-sm font-bold">キャンセル</button>}<button className="px-6 py-2 bg-slate-800 text-white rounded text-sm font-bold">{eId?"更新":"保存"}</button></div></form></div>
+          <div className="space-y-4">{(inc.events||[]).sort((a,b)=>new Date(b.datetime)-new Date(a.datetime)).map(e=>(<div key={e.id} className="bg-white p-4 rounded-xl border relative group"><div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 flex gap-1"><button onClick={()=>{setEv({dt:e.datetime,ty:e.type,co:e.content});setEId(e.id);window.scrollTo(0,0)}} className="p-1 hover:text-blue-500"><Icon name="Edit3" size={16}/></button><button onClick={()=>del(e.id)} className="p-1 hover:text-red-500"><Icon name="Trash2" size={16}/></button></div><div className="flex gap-2 items-center mb-2"><span className="text-xs font-bold text-slate-500">{e.datetime.replace('T',' ')}</span><span className="text-xs px-2 py-0.5 bg-slate-100 border rounded font-bold">{e.type}</span></div><p className="whitespace-pre-wrap text-sm">{e.content}</p></div>))}</div>
+        </div>
+      );
+    }
+
+    function IdeasView({ ideas, setIdeas, showToast, confirmDialog }) {
+      const [nI, setNI] = useState({ ty:'my_idea', co:'' }); const [eId, setEId] = useState(null); const [sb, setSb] = useState('date_desc');
+      const save = e => { e.preventDefault(); if(!nI.co)return; if(eId){ setIdeas(p=>p.map(i=>i.id===eId?{...i,type:nI.ty,content:nI.co}:i)); setEId(null); showToast("更新しました"); }else{ setIdeas(p=>[{id:Date.now(),type:nI.ty,content:nI.co,createdAt:Date.now(),dateStr:new Date().toISOString().split('T')[0]},...p]); showToast("保存しました"); } setNI({ty:'my_idea',co:''}); };
+      const del = id => confirmDialog("アイデアを削除しますか？", () => { setIdeas(p=>p.filter(i=>i.id!==id)); if(eId===id){setEId(null);setNI({ty:'my_idea',co:''})} showToast("削除しました"); });
+      const sorted = [...ideas].sort((a,b)=>sb==='date_desc'?b.createdAt-a.createdAt:sb==='date_asc'?a.createdAt-b.createdAt:a.type.localeCompare(b.type));
+      return (
+        <div className="max-w-4xl mx-auto">
+          <div className="flex justify-between mb-6"><h2 className="text-2xl font-bold">アイデア・学び</h2><select className="border p-2 rounded text-sm font-bold focus:ring-2 focus:ring-blue-500 outline-none" value={sb} onChange={e=>setSb(e.target.value)}><option value="date_desc">新着順</option><option value="date_asc">古い順</option><option value="type">カテゴリ</option></select></div>
+          <div className={`bg-white p-6 rounded-xl border mb-6 ${eId?'border-blue-400 ring-2 ring-blue-50':''}`}><form onSubmit={save} className="space-y-4"><div className="flex gap-2 flex-wrap">{Object.entries(IDEA_TYPES).map(([k,v])=><label key={k} className={`px-4 py-2 border rounded-xl text-sm font-bold cursor-pointer flex items-center gap-2 ${nI.ty===k?'bg-blue-50 border-blue-500':''}`}><input type="radio" className="hidden" checked={nI.ty===k} onChange={()=>setNI({...nI,ty:k})}/><span className={`w-3 h-3 rounded-full ${v.color.split(' ')[0]}`}></span>{v.label}</label>)}</div><textarea required className="w-full p-4 bg-slate-50 border rounded-xl h-24 focus:ring-2 focus:ring-blue-500" value={nI.co} onChange={e=>setNI({...nI,co:e.target.value})} placeholder="メモ..."/><div className="flex justify-end gap-2">{eId&&<button type="button" onClick={()=>{setEId(null);setNI({ty:'my_idea',co:''})}} className="px-4 py-2 bg-slate-100 rounded font-bold text-sm">キャンセル</button>}<button className="px-6 py-2 bg-slate-800 text-white rounded font-bold text-sm">{eId?"更新":"保存"}</button></div></form></div>
+          <div className="grid grid-cols-2 gap-4">{sorted.map(i=>{const t=IDEA_TYPES[i.type]||IDEA_TYPES.others; return <div key={i.id} className="bg-white p-5 rounded-xl border relative group"><div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 flex gap-1"><button onClick={()=>{setNI({ty:i.type,co:i.content});setEId(i.id);window.scrollTo(0,0)}} className="p-1 hover:text-blue-500"><Icon name="Edit3" size={16}/></button><button onClick={()=>del(i.id)} className="p-1 hover:text-red-500"><Icon name="Trash2" size={16}/></button></div><div className="flex justify-between items-center mb-2"><span className={`text-xs px-2 py-1 border rounded-full font-bold ${t.color}`}>{t.label}</span><span className="text-xs text-slate-400 font-bold">{i.dateStr}</span></div><p className="whitespace-pre-wrap text-sm">{i.content}</p></div>})}</div>
+        </div>
+      );
+    }
+
+    function TodosView({ todos, setTodos, showToast, confirmDialog }) {
+      const [nT, setNT] = useState({ ti:'', dt:'', da:new Date().toISOString().split('T')[0], im:false }); const [eId, setEId] = useState(null);
+      const save = e => { e.preventDefault(); if(!nT.ti)return; if(eId){ setTodos(p=>p.map(t=>t.id===eId?{...t,title:nT.ti,detail:nT.dt,date:nT.da,isImportant:nT.im}:t)); setEId(null); showToast("更新しました"); }else{ setTodos(p=>[{id:Date.now(),title:nT.ti,detail:nT.dt,date:nT.da,isImportant:nT.im,isCompleted:false,createdAt:Date.now()},...p]); showToast("追加しました"); } setNT({ti:'',dt:'',da:new Date().toISOString().split('T')[0],im:false}); };
+      const del = id => confirmDialog("タスクを削除しますか？", () => { setTodos(p=>p.filter(t=>t.id!==id)); if(eId===id){setEId(null);setNT({ti:'',dt:'',da:new Date().toISOString().split('T')[0],im:false})} });
+      const act = todos.filter(t=>!t.isCompleted).sort((a,b)=>{if(a.isImportant&&!b.isImportant)return -1;if(!a.isImportant&&b.isImportant)return 1;if(a.date>b.date)return -1;if(a.date<b.date)return 1;return b.createdAt-a.createdAt});
+      const cmp = todos.filter(t=>t.isCompleted).sort((a,b)=>b.createdAt-a.createdAt);
+      return (
+        <div className="max-w-4xl mx-auto">
+          <h2 className="text-2xl font-bold mb-6">ToDoリスト</h2>
+          <div className={`bg-white p-6 rounded-xl border mb-8 ${eId?'border-blue-400 ring-2 ring-blue-50':''}`}><form onSubmit={save} className="space-y-4"><div className="flex gap-4"><input required placeholder="タスク名" className="flex-[2] p-3 border bg-slate-50 rounded focus:ring-2 focus:ring-blue-500" value={nT.ti} onChange={e=>setNT({...nT,ti:e.target.value})}/><input type="date" required className="w-32 p-3 border bg-slate-50 rounded focus:ring-2 focus:ring-blue-500" value={nT.da} onChange={e=>setNT({...nT,da:e.target.value})}/></div><textarea placeholder="詳細..." className="w-full p-3 border bg-slate-50 rounded h-16 focus:ring-2 focus:ring-blue-500" value={nT.dt} onChange={e=>setNT({...nT,dt:e.target.value})}/><div className="flex justify-between items-center"><label className="flex items-center gap-2 cursor-pointer font-bold text-sm"><input type="checkbox" checked={nT.im} onChange={e=>setNT({...nT,im:e.target.checked})} className="w-4 h-4 rounded text-amber-500"/> 重要☆</label><div className="flex gap-2">{eId&&<button type="button" onClick={()=>{setEId(null);setNT({ti:'',dt:'',da:new Date().toISOString().split('T')[0],im:false})}} className="px-4 py-2 bg-slate-100 rounded font-bold text-sm">キャンセル</button>}<button className="px-6 py-2 bg-blue-600 text-white rounded font-bold text-sm">{eId?"更新":"追加"}</button></div></div></form></div>
+          <div className="space-y-3 mb-8"><h3 className="font-bold border-b pb-2">未完了 <span className="text-xs bg-slate-100 px-2 rounded-full">{act.length}</span></h3>{act.map(t=>(<div key={t.id} className={`bg-white p-4 rounded-xl border flex gap-3 group relative ${t.isImportant?'border-amber-300 ring-2 ring-amber-50':''}`}><button onClick={()=>setTodos(p=>p.map(x=>x.id===t.id?{...x,isCompleted:true}:x))} className="w-6 h-6 border-2 rounded hover:bg-emerald-500 hover:border-emerald-500 text-transparent hover:text-white shrink-0 mt-0.5"><Icon name="Check" size={14}/></button><div className="flex-1"><div className="flex gap-2 items-start"><button onClick={()=>setTodos(p=>p.map(x=>x.id===t.id?{...x,isImportant:!x.isImportant}:x))} className={t.isImportant?'text-amber-500':'text-slate-300'}><Icon name="Star" size={18} className={t.isImportant?'fill-current':''}/></button><span className="font-bold flex-1">{t.title}</span><span className="text-xs border px-1.5 py-0.5 rounded bg-slate-50">{t.date}</span></div>{t.dt&&<p className="mt-1 text-sm text-slate-600">{t.dt}</p>}</div><div className="flex flex-col gap-1 opacity-0 group-hover:opacity-100"><button onClick={()=>{setNT({ti:t.title,dt:t.detail||'',da:t.date,im:t.isImportant});setEId(t.id);window.scrollTo(0,0)}} className="p-1 hover:text-blue-500"><Icon name="Edit3" size={18}/></button><button onClick={()=>del(t.id)} className="p-1 hover:text-red-500"><Icon name="Trash2" size={18}/></button></div></div>))}</div>
+          {cmp.length>0 && <div className="space-y-2"><h3 className="font-bold border-b pb-2 text-slate-500">完了済 <span className="text-xs bg-slate-100 px-2 rounded-full">{cmp.length}</span></h3>{cmp.map(t=>(<div key={t.id} className="bg-slate-50 p-3 rounded-lg border flex gap-3 items-center group opacity-70 hover:opacity-100"><button onClick={()=>setTodos(p=>p.map(x=>x.id===t.id?{...x,isCompleted:false}:x))} className="w-6 h-6 bg-emerald-500 text-white rounded shrink-0 flex items-center justify-center"><Icon name="Check" size={14}/></button><span className="line-through flex-1 text-sm text-slate-500">{t.title}</span><button onClick={()=>del(t.id)} className="opacity-0 group-hover:opacity-100 hover:text-red-500 p-1"><Icon name="Trash2" size={16}/></button></div>))}</div>}
+        </div>
+      );
+    }
+
+    // === Main App Component ===
     function App() {
       const [activeTab, setActiveTab] = useState('dashboard');
       const [selectedStudentId, setSelectedStudentId] = useState(null);
-      const [isPrintingAll, setIsPrintingAll] = useState(false);
       const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
       const [toast, setToast] = useState(null);
       const [isConfigOpen, setIsConfigOpen] = useState(false);
+      const [isPrintingAll, setIsPrintingAll] = useState(false);
 
       const [records, setRecords] = useState({});
       const [events, setEvents] = useState([]);
-      const [goals, setGoals] = useState({ year: '', term1: '', term2: '', term3: '' });
+      const [goals, setGoals] = useState({ year: '' });
       const [grades, setGrades] = useState({});
       const [mockGrades, setMockGrades] = useState({});
       const [studentDetails, setStudentDetails] = useState({});
       const [ideas, setIdeas] = useState([]); 
       const [todos, setTodos] = useState([]);
       const [incidents, setIncidents] = useState([]);
+      const [principles, setPrinciples] = useState([]);
       
       const [selectedIncidentId, setSelectedIncidentId] = useState(null);
-      const [isPrintingIncident, setIsPrintingIncident] = useState(false);
       const [printingIncidentId, setPrintingIncidentId] = useState(null);
 
-      // クラスの出来事 編集用State
       const [editingEventId, setEditingEventId] = useState(null);
       const [editingEventData, setEditingEventData] = useState(null);
       
@@ -210,1331 +385,264 @@
       const [firebaseInitError, setFirebaseInitError] = useState(null);
       const [syncId, setSyncId] = useState(() => localStorage.getItem('classNoteSyncId') || '');
       const [user, setUser] = useState(null);
+      const [dbInstance, setDbInstance] = useState(null);
 
-      useEffect(() => {
-        localStorage.setItem('classNoteSyncId', syncId);
-      }, [syncId]);
-
-      const isCloudReady = user && syncId.trim() !== '';
       const fileBackupRef = useRef(null);
 
-      const parseFirebaseConfig = (str) => {
-        if (!str || typeof str !== 'string' || !str.trim()) return null;
-        try { return JSON.parse(str); } catch (e) {
-          try {
-            const jsonStr = str.replace(/\s+/g, '').replace(/([a-zA-Z0-9_]+):/g, '"$1":').replace(/'/g, '"').replace(/,}/g, '}');
-            return JSON.parse(jsonStr);
-          } catch (e2) { return null; }
-        }
-      };
+      // --- Confirm Dialog State ---
+      const [confirmState, setConfirmState] = useState(null);
+      const confirmDialog = useCallback((msg, onConfirm) => setConfirmState({ msg, onConfirm }), []);
+
+      useEffect(() => { localStorage.setItem('classNoteSyncId', syncId); }, [syncId]);
+      const isCloudReady = user && syncId.trim() !== '' && dbInstance;
+
+      const showToast = useCallback((msg) => { setToast(msg); setTimeout(() => setToast(null), 3000); }, []);
 
       const handleSaveFirebaseConfig = () => {
         if (!configInput || (typeof configInput === 'string' && !configInput.trim())) {
-          localStorage.removeItem('customFirebaseConfig');
-          setCustomFirebaseConfig('');
-          showToast("Firebase設定をリセットしました。ページを再読み込みします。");
-          setTimeout(() => window.location.reload(), 1500);
-          return;
+          localStorage.removeItem('customFirebaseConfig'); setCustomFirebaseConfig(''); showToast("リセットしました"); setTimeout(() => window.location.reload(), 1000); return;
         }
-        const parsed = typeof configInput === 'string' ? parseFirebaseConfig(configInput) : configInput;
-        if (parsed && parsed.apiKey && parsed.projectId) {
-          const stringified = JSON.stringify(parsed);
-          localStorage.setItem('customFirebaseConfig', stringified);
-          setCustomFirebaseConfig(stringified);
-          showToast("Firebase設定を保存しました。反映のためページを再読み込みします。");
-          setTimeout(() => window.location.reload(), 1500);
-        } else {
-          showToast("エラー: 正しい形式のFirebase設定ではありません。");
-        }
+        try {
+          const parsed = typeof configInput === 'string' ? JSON.parse(configInput.replace(/\s+/g,'').replace(/([a-zA-Z0-9_]+):/g,'"$1":').replace(/'/g,'"').replace(/,}/g,'}')) : configInput;
+          if (parsed && parsed.apiKey && parsed.projectId) {
+            localStorage.setItem('customFirebaseConfig', JSON.stringify(parsed)); setCustomFirebaseConfig(JSON.stringify(parsed)); showToast("保存しました"); setTimeout(() => window.location.reload(), 1000);
+          } else { showToast("無効な設定形式です"); }
+        } catch(e) { showToast("設定解析エラー"); }
       };
 
       useEffect(() => {
-        const initFirebaseAndAuth = async () => {
+        const initFirebase = async () => {
           try {
-            const appMod = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js");
-            const authMod = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js");
-            const dbMod = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js");
-            
-            let configToUse = customFirebaseConfig ? JSON.parse(customFirebaseConfig) : 
-                              (typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null);
-            if (!configToUse) return;
-
-            const app = appMod.getApps().length === 0 ? appMod.initializeApp(configToUse) : appMod.getApp();
-            const auth = authMod.getAuth(app);
-            const db = dbMod.getFirestore(app);
-            
-            window.firebaseDb = db;
-            window.firebaseDoc = dbMod.doc;
-            window.firebaseSetDoc = dbMod.setDoc;
-            window.firebaseGetDoc = dbMod.getDoc;
-            window.firebaseOnSnapshot = dbMod.onSnapshot;
-
-            if (customFirebaseConfig) {
-               await authMod.signInAnonymously(auth);
-            } else {
-               if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                 await authMod.signInWithCustomToken(auth, __initial_auth_token);
-               } else {
-                 await authMod.signInAnonymously(auth);
-               }
-            }
-            authMod.onAuthStateChanged(auth, (u) => setUser(u));
-            setFirebaseInitError(null);
-          } catch (error) {
-            console.error("Firebase setup error", error);
-            setFirebaseInitError("Firebaseの初期化に失敗しました。設定を確認してください。");
-          }
+            const { initializeApp, getApps, getApp } = await import('https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js');
+            const { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } = await import('https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js');
+            const { getFirestore } = await import('https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js');
+            let conf = customFirebaseConfig ? JSON.parse(customFirebaseConfig) : (typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null);
+            if (!conf) return;
+            const app = getApps().length === 0 ? initializeApp(conf) : getApp();
+            const auth = getAuth(app); const db = getFirestore(app);
+            setDbInstance(db);
+            if (customFirebaseConfig) { await signInAnonymously(auth); } 
+            else { if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) { await signInWithCustomToken(auth, __initial_auth_token); } else { await signInAnonymously(auth); } }
+            onAuthStateChanged(auth, u => setUser(u));
+          } catch (e) { setFirebaseInitError("初期化エラー"); }
         };
-        initFirebaseAndAuth();
+        initFirebase();
       }, [customFirebaseConfig]);
 
-      const showToast = useCallback((message) => {
-        setToast(message);
-        setTimeout(() => setToast(null), 4000);
-      }, []);
-      
-      const localDataRef = useRef({ records, events, goals, grades, mockGrades, studentDetails, ideas, todos, incidents });
-      useEffect(() => {
-        localDataRef.current = { records, events, goals, grades, mockGrades, studentDetails, ideas, todos, incidents };
-      }, [records, events, goals, grades, mockGrades, studentDetails, ideas, todos, incidents]);
+      const localDataRef = useRef({ records, events, goals, grades, mockGrades, studentDetails, ideas, todos, incidents, principles });
+      useEffect(() => { localDataRef.current = { records, events, goals, grades, mockGrades, studentDetails, ideas, todos, incidents, principles }; }, [records, events, goals, grades, mockGrades, studentDetails, ideas, todos, incidents, principles]);
 
       useEffect(() => {
-        if (!user || !syncId.trim() || !window.firebaseDb || !window.firebaseOnSnapshot) return;
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        const docRef = window.firebaseDoc(window.firebaseDb, 'artifacts', appId, 'public', 'data', 'class_notes', syncId.trim());
-        
-        const unsubscribe = window.firebaseOnSnapshot(docRef, (snap) => {
-          if (snap.exists()) {
-            if (!snap.metadata.hasPendingWrites) {
-              const data = snap.data();
-              const cloudDataStr = JSON.stringify({
-                records: data.records || {}, events: data.events || [], goals: data.goals || {}, 
-                grades: data.grades || {}, mockGrades: data.mockGrades || {}, studentDetails: data.studentDetails || {},
-                ideas: data.ideas || [], todos: data.todos || [], incidents: data.incidents || []
-              });
+        if (!isCloudReady) return;
+        import('https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js').then(({doc, onSnapshot}) => {
+          const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+          const docRef = doc(dbInstance, 'artifacts', appId, 'public', 'data', 'class_notes', syncId.trim());
+          const unsub = onSnapshot(docRef, (snap) => {
+            if (snap.exists() && !snap.metadata.hasPendingWrites) {
+              const d = snap.data();
+              const cloudDataStr = JSON.stringify({ records:d.records||{}, events:d.events||[], goals:d.goals||{}, grades:d.grades||{}, mockGrades:d.mockGrades||{}, studentDetails:d.studentDetails||{}, ideas:d.ideas||[], todos:d.todos||[], incidents:d.incidents||[], principles:d.principles||[] });
               const localDataStr = JSON.stringify(localDataRef.current);
-              
               if (cloudDataStr !== localDataStr) {
                 isRestoringRef.current = true;
-                if(data.records) setRecords(data.records);
-                if(data.events) setEvents(data.events);
-                if(data.goals) setGoals(data.goals);
-                if(data.grades) setGrades(data.grades);
-                if(data.mockGrades) setMockGrades(data.mockGrades);
-                if(data.studentDetails) setStudentDetails(data.studentDetails);
-                if(data.ideas) setIdeas(data.ideas);
-                if(data.todos) setTodos(data.todos);
-                if(data.incidents) setIncidents(data.incidents);
+                if(d.records) setRecords(d.records); if(d.events) setEvents(d.events); if(d.goals) setGoals(d.goals); if(d.grades) setGrades(d.grades); if(d.mockGrades) setMockGrades(d.mockGrades); if(d.studentDetails) setStudentDetails(d.studentDetails); if(d.ideas) setIdeas(d.ideas); if(d.todos) setTodos(d.todos); if(d.incidents) setIncidents(d.incidents); if(d.principles) setPrinciples(d.principles);
                 setTimeout(() => { isRestoringRef.current = false; }, 500); 
               }
             }
-          }
-          setHasInitialLoaded(true);
-        }, (err) => {
-          console.error("同期エラー:", err);
-          setHasInitialLoaded(true);
+            setHasInitialLoaded(true);
+          }, (err) => setHasInitialLoaded(true));
+          return () => unsub();
         });
-
-        return () => { unsubscribe(); setHasInitialLoaded(false); };
-      }, [user, syncId, customFirebaseConfig]);
+      }, [isCloudReady, syncId, dbInstance]);
 
       useEffect(() => {
         if (!isCloudReady || !hasInitialLoaded || isRestoringRef.current) return;
         setSaveStatus('saving');
         const timer = setTimeout(async () => {
           try {
-            const dataToSave = localDataRef.current;
+            const {doc, setDoc} = await import('https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js');
             const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-            const docRef = window.firebaseDoc(window.firebaseDb, 'artifacts', appId, 'public', 'data', 'class_notes', syncId.trim());
-            await window.firebaseSetDoc(docRef, dataToSave, { merge: true });
-            setSaveStatus('saved');
-            setTimeout(() => setSaveStatus('idle'), 2000);
-          } catch (e) {
-            console.error("Auto Save Error", e);
-            setSaveStatus('idle');
-          }
+            await setDoc(doc(dbInstance, 'artifacts', appId, 'public', 'data', 'class_notes', syncId.trim()), localDataRef.current, { merge: true });
+            setSaveStatus('saved'); setTimeout(() => setSaveStatus('idle'), 2000);
+          } catch (e) { setSaveStatus('idle'); }
         }, 1500); 
         return () => clearTimeout(timer);
-      }, [records, events, goals, grades, mockGrades, studentDetails, ideas, todos, incidents, isCloudReady, hasInitialLoaded]);
+      }, [records, events, goals, grades, mockGrades, studentDetails, ideas, todos, incidents, principles, isCloudReady, hasInitialLoaded, dbInstance, syncId]);
 
       const handlePushCloud = async () => {
-        if (!isCloudReady) return showToast("エラー: Sync IDを入力してください。");
-        try {
-          const data = localDataRef.current;
-          const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-          const docRef = window.firebaseDoc(window.firebaseDb, 'artifacts', appId, 'public', 'data', 'class_notes', syncId.trim());
-          await window.firebaseSetDoc(docRef, data, { merge: true });
-          showToast("クラウドに手動で保存しました！");
-        } catch (e) { showToast("保存に失敗しました。"); }
+        if (!isCloudReady) return showToast("Sync IDを入力してください");
+        try { const {doc, setDoc} = await import('https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js'); const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id'; await setDoc(doc(dbInstance, 'artifacts', appId, 'public', 'data', 'class_notes', syncId.trim()), localDataRef.current, { merge: true }); showToast("手動保存完了"); } catch (e) { showToast("保存失敗"); }
       };
-
       const handlePullCloud = async () => {
-        if (!isCloudReady) return showToast("エラー: Sync IDを入力してください。");
+        if (!isCloudReady) return showToast("Sync IDを入力してください");
         try {
+          const {doc, getDoc} = await import('https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js');
           const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-          const docRef = window.firebaseDoc(window.firebaseDb, 'artifacts', appId, 'public', 'data', 'class_notes', syncId.trim());
-          const snap = await window.firebaseGetDoc(docRef);
+          const snap = await getDoc(doc(dbInstance, 'artifacts', appId, 'public', 'data', 'class_notes', syncId.trim()));
           if (snap.exists()) {
-            isRestoringRef.current = true;
-            const data = snap.data();
-            if(data.records) setRecords(data.records);
-            if(data.events) setEvents(data.events);
-            if(data.goals) setGoals(data.goals);
-            if(data.grades) setGrades(data.grades);
-            if(data.mockGrades) setMockGrades(data.mockGrades);
-            if(data.studentDetails) setStudentDetails(data.studentDetails);
-            if(data.ideas) setIdeas(data.ideas);
-            if(data.todos) setTodos(data.todos);
-            if(data.incidents) setIncidents(data.incidents);
-            setTimeout(() => { isRestoringRef.current = false; }, 500);
-            showToast("クラウドから最新のデータを手動で復元しました！");
-          } else { showToast("指定されたSync IDのデータが見つかりません。"); }
-        } catch (e) { showToast("読み込みに失敗しました。"); }
+            isRestoringRef.current = true; const d = snap.data();
+            if(d.records) setRecords(d.records); if(d.events) setEvents(d.events); if(d.goals) setGoals(d.goals); if(d.grades) setGrades(d.grades); if(d.mockGrades) setMockGrades(d.mockGrades); if(d.studentDetails) setStudentDetails(d.studentDetails); if(d.ideas) setIdeas(d.ideas); if(d.todos) setTodos(d.todos); if(d.incidents) setIncidents(d.incidents); if(d.principles) setPrinciples(d.principles);
+            setTimeout(() => { isRestoringRef.current = false; }, 500); showToast("手動読込完了");
+          } else { showToast("データなし"); }
+        } catch (e) { showToast("読込失敗"); }
       };
-
-      // == Individual Save Handlers with Edit support ==
-      const handleSaveRecord = (studentId, record, recordId = null) => {
-        setRecords(prev => {
-          const studentRecords = prev[studentId] || [];
-          let newRecords;
-          if (recordId) {
-            newRecords = studentRecords.map(r => r.id === recordId ? { ...record, id: recordId } : r);
-            showToast("記録を更新しました。");
-          } else {
-            newRecords = [{ ...record, id: Date.now() }, ...studentRecords];
-            showToast("記録を追加しました。");
-          }
-          newRecords.sort((a, b) => new Date(b.date) - new Date(a.date));
-          return { ...prev, [studentId]: newRecords };
-        });
-      };
-
-      const handleDeleteRecord = (studentId, recordId) => {
-        if (window.confirm("この記録を削除しますか？")) {
-          setRecords(prev => {
-            const studentRecords = prev[studentId] || [];
-            return { ...prev, [studentId]: studentRecords.filter(r => r.id !== recordId) };
-          });
-          showToast("記録を削除しました。");
-        }
-      };
-
-      const handleSaveClassEvent = (eventData) => {
-        if (editingEventId) {
-          setEvents(prev => prev.map(ev => ev.id === editingEventId ? { ...eventData, id: editingEventId } : ev).sort((a, b) => new Date(b.date) - new Date(a.date)));
-          showToast("出来事を更新しました。");
-        } else {
-          setEvents(prev => [{ ...eventData, id: Date.now() }, ...prev].sort((a, b) => new Date(b.date) - new Date(a.date)));
-          showToast("出来事を記録しました。");
-        }
-        setEditingEventId(null);
-        setEditingEventData(null);
-      };
-
-      const handleEditClassEvent = (ev) => {
-        setEditingEventId(ev.id);
-        setEditingEventData({ title: ev.title, date: ev.date, content: ev.content });
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      };
-
-      const handleDeleteClassEvent = (id) => {
-        if (window.confirm("この出来事を削除しますか？")) {
-          setEvents(prev => prev.filter(ev => ev.id !== id));
-          if (editingEventId === id) {
-            setEditingEventId(null);
-            setEditingEventData(null);
-          }
-          showToast("出来事を削除しました。");
-        }
-      };
-
-      const handleUpdateGoal = (field, value) => { setGoals(prev => ({ ...prev, [field]: value })); };
-
       const handleExportBackup = () => {
-        const data = { records, events, goals, grades, mockGrades, studentDetails, ideas, todos, incidents };
-        const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `中2A_バックアップ_${new Date().toISOString().split('T')[0]}.json`;
-        link.click();
-        showToast("バックアップファイルをダウンロードしました。");
+        const b = new Blob([JSON.stringify(localDataRef.current)], { type: 'application/json' });
+        const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = `中2A_バックアップ_${new Date().toISOString().split('T')[0]}.json`; a.click(); showToast("保存完了");
       };
-
       const handleImportBackup = (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = (event) => {
+        const f = e.target.files[0]; if (!f) return; const rd = new FileReader();
+        rd.onload = (ev) => {
           try {
-            const data = JSON.parse(event.target.result);
-            isRestoringRef.current = true;
-            if(data.records) setRecords(data.records);
-            if(data.events) setEvents(data.events);
-            if(data.goals) setGoals(data.goals);
-            if(data.grades) setGrades(data.grades);
-            if(data.mockGrades) setMockGrades(data.mockGrades);
-            if(data.studentDetails) setStudentDetails(data.studentDetails);
-            if(data.ideas) setIdeas(data.ideas);
-            if(data.todos) setTodos(data.todos);
-            if(data.incidents) setIncidents(data.incidents);
-            setTimeout(() => { isRestoringRef.current = false; }, 500);
-            showToast('JSONファイルからデータを復元しました。');
-          } catch(err) { showToast('ファイルの読み込みに失敗しました。'); }
-        };
-        reader.readAsText(file);
-        e.target.value = null;
+            const d = JSON.parse(ev.target.result); isRestoringRef.current = true;
+            if(d.records) setRecords(d.records); if(d.events) setEvents(d.events); if(d.goals) setGoals(d.goals); if(d.grades) setGrades(d.grades); if(d.mockGrades) setMockGrades(d.mockGrades); if(d.studentDetails) setStudentDetails(d.studentDetails); if(d.ideas) setIdeas(d.ideas); if(d.todos) setTodos(d.todos); if(d.incidents) setIncidents(d.incidents); if(d.principles) setPrinciples(d.principles);
+            setTimeout(() => { isRestoringRef.current = false; }, 500); showToast('復元完了');
+          } catch(err) { showToast('失敗しました'); }
+        }; rd.readAsText(f); e.target.value = null;
       };
 
       useEffect(() => {
-        const handleAfterPrint = () => { setIsPrintingAll(false); setIsPrintingIncident(false); };
-        window.addEventListener('afterprint', handleAfterPrint);
-        if (isPrintingAll || isPrintingIncident) setTimeout(() => window.print(), 500);
-        return () => window.removeEventListener('afterprint', handleAfterPrint);
-      }, [isPrintingAll, isPrintingIncident]);
+        const afterP = () => { setIsPrintingAll(false); setPrintingIncidentId(null); };
+        window.addEventListener('afterprint', afterP);
+        if (isPrintingAll || printingIncidentId) setTimeout(() => window.print(), 500);
+        return () => window.removeEventListener('afterprint', afterP);
+      }, [isPrintingAll, printingIncidentId]);
 
-      if (isPrintingIncident && printingIncidentId) {
-        const incidentToPrint = incidents.find(i => i.id === printingIncidentId);
-        if (!incidentToPrint) return null;
+      const navs = [ {id:'dashboard',i:'Target',l:'クラス目標・状況'}, {id:'principles',i:'Heart',l:'クラス指針・心構え'}, {id:'students',i:'Users',l:'生徒一覧・記録'}, {id:'student_details',i:'ClipboardList',l:'生徒詳細情報'}, {id:'grades',i:'FileSpreadsheet',l:'定期考査'}, {id:'mock_grades',i:'LineChart',l:'模試成績'}, {id:'events',i:'Calendar',l:'出来事'}, {id:'ideas',i:'Lightbulb',l:'アイデア'}, {id:'todos',i:'CheckSquare',l:'ToDo'}, {id:'incidents',i:'AlertTriangle',l:'生徒対応'} ];
+
+      if (printingIncidentId) {
+        const inc = incidents.find(i => i.id === printingIncidentId); if (!inc) return null;
         return (
-          <div className="bg-white text-black print:p-0 p-8 max-w-4xl mx-auto">
-            <div className="text-center pb-4 border-b-2 border-slate-800 mb-6">
-              <h1 className="text-2xl font-bold">生徒・保護者対応 報告書</h1>
-              <p className="mt-2 text-slate-600 text-sm">
-                出力日: {new Date().toLocaleDateString('ja-JP')} / 状態: {incidentToPrint.status === 'resolved' ? '解決済み' : '対応中'}
-              </p>
-            </div>
-            <div className="mb-8">
-              <h2 className="text-2xl font-bold mb-3">件名: {incidentToPrint.title}</h2>
-              <div className="flex gap-6 text-base text-slate-800 mb-4 bg-slate-50 p-4 rounded border border-slate-200">
-                <span className="font-bold">発生日: {incidentToPrint.date}</span>
-                <span>
-                  <span className="font-bold mr-2">関わった生徒:</span>
-                  {incidentToPrint.involvedStudents.map(id => {
-                    const st = INITIAL_STUDENTS.find(s => s.id === id);
-                    return st ? `${st.number}.${st.name}` : '';
-                  }).join(', ')}
-                </span>
-              </div>
-            </div>
-            <div>
-              <h3 className="text-xl font-bold border-b-2 border-slate-800 pb-2 mb-4">対応時系列</h3>
-              <div className="space-y-4">
-                {incidentToPrint.events && incidentToPrint.events.length > 0 ? (
-                  [...incidentToPrint.events].sort((a,b) => new Date(a.datetime) - new Date(b.datetime)).map(ev => {
-                    const dateObj = new Date(ev.datetime);
-                    const formattedDate = `${dateObj.getFullYear()}/${(dateObj.getMonth()+1).toString().padStart(2, '0')}/${dateObj.getDate().toString().padStart(2, '0')} ${dateObj.getHours().toString().padStart(2, '0')}:${dateObj.getMinutes().toString().padStart(2, '0')}`;
-                    return (
-                      <div key={ev.id} className="border border-slate-300 p-4 rounded-lg bg-white page-break-inside-avoid">
-                        <div className="flex items-center gap-3 mb-2 border-b border-slate-100 pb-2">
-                          <span className="font-bold text-slate-700">{formattedDate}</span>
-                          <span className="bg-slate-100 px-2 py-1 rounded text-xs font-bold text-slate-600 border border-slate-200">{ev.type}</span>
-                        </div>
-                        <p className="whitespace-pre-wrap text-base leading-relaxed">{ev.content}</p>
-                      </div>
-                    )
-                  })
-                ) : ( <p className="text-slate-500 italic p-4 bg-slate-50 rounded text-center">記録はありません。</p> )}
-              </div>
-            </div>
+          <div className="bg-white text-black p-8 max-w-4xl mx-auto">
+            <div className="text-center pb-4 border-b-2 border-slate-800 mb-6"><h1 className="text-2xl font-bold">生徒・保護者対応 報告書</h1><p className="mt-2 text-slate-600 text-sm">出力日: {new Date().toLocaleDateString('ja-JP')} / 状態: {inc.status === 'resolved' ? '解決済' : '対応中'}</p></div>
+            <div className="mb-8"><h2 className="text-2xl font-bold mb-3">件名: {inc.title}</h2><div className="flex gap-6 text-base text-slate-800 mb-4 bg-slate-50 p-4 rounded border"><span className="font-bold">発生日: {inc.date}</span><span><span className="font-bold mr-2">関わった生徒:</span>{inc.involvedStudents.map(id => { const st = INITIAL_STUDENTS.find(s => s.id === id); return st ? `${st.number}.${st.name}` : ''; }).join(', ')}</span></div></div>
+            <div><h3 className="text-xl font-bold border-b-2 border-slate-800 pb-2 mb-4">時系列</h3><div className="space-y-4">{(inc.events||[]).sort((a,b) => new Date(a.datetime) - new Date(b.datetime)).map(ev => { const d = new Date(ev.datetime); return <div key={ev.id} className="border p-4 rounded-lg bg-white page-break-inside-avoid"><div className="flex items-center gap-3 mb-2 border-b pb-2"><span className="font-bold text-slate-700">{`${d.getFullYear()}/${(d.getMonth()+1).toString().padStart(2,'0')}/${d.getDate().toString().padStart(2,'0')} ${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}`}</span><span className="bg-slate-100 px-2 py-1 rounded text-xs font-bold border">{ev.type}</span></div><p className="whitespace-pre-wrap text-base">{ev.content}</p></div> })}</div></div>
           </div>
         );
       }
 
       if (isPrintingAll) {
         return (
-          <div className="bg-white text-black print:p-0">
-            <div className="hidden print:block text-center pb-2 border-b-2 border-slate-800 mb-4">
-              <h1 className="text-xl font-bold">2年A組 全生徒指導・面談記録</h1>
-              <p className="mt-1 text-slate-600 text-xs">印刷日: {new Date().toLocaleDateString('ja-JP')}</p>
-            </div>
-            {INITIAL_STUDENTS.map(student => (
-              <div key={student.id} className="break-after-page print:py-2">
-                <StudentDetail 
-                  student={student} records={records[student.id] || []}
-                  studentGrades={TEST_TERMS.reduce((acc, term) => { acc[term.id] = grades[term.id]?.[student.id] || null; return acc; }, {})}
-                  studentMockGrades={MOCK_EXAMS.reduce((acc, mock) => { acc[mock.id] = mockGrades[mock.id]?.[student.id] || null; return acc; }, {})}
-                  details={studentDetails[student.id] || {}}
-                  onUpdateDetails={() => {}} onSaveRecord={() => {}} onDeleteRecord={() => {}} onBack={() => {}} isPrintAllMode={true}
-                />
-              </div>
-            ))}
+          <div className="bg-white text-black">
+            <div className="hidden print:block text-center pb-2 border-b-2 border-slate-800 mb-4"><h1 className="text-xl font-bold">2年A組 個人記録</h1><p className="mt-1 text-slate-600 text-xs">印刷日: {new Date().toLocaleDateString('ja-JP')}</p></div>
+            {INITIAL_STUDENTS.map(s => <div key={s.id} className="break-after-page py-2"><StudentDetail student={s} records={records[s.id]||[]} studentGrades={TEST_TERMS.reduce((a, t) => ({...a, [t.id]: grades[t.id]?.[s.id]||null}), {})} studentMockGrades={MOCK_EXAMS.reduce((a, m) => ({...a, [m.id]: mockGrades[m.id]?.[s.id]||null}), {})} details={studentDetails[s.id]||{}} onUpdateDetails={()=>{}} onSaveRecord={()=>{}} onDeleteRecord={()=>{}} onBack={()=>{}} isPrint={true} confirmDialog={confirmDialog} /></div>)}
           </div>
         );
       }
 
       return (
-        <div className="flex h-screen bg-slate-50 overflow-hidden text-slate-800">
-          <aside className={`${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0 absolute md:relative z-20 transition-transform duration-300 ease-in-out w-64 h-full bg-white border-r border-slate-200 flex flex-col print:hidden shadow-lg md:shadow-none`}>
-            <div className="p-6 border-b border-slate-100 flex justify-between items-start">
+        <div className="flex h-screen bg-slate-50 overflow-hidden text-slate-800 font-sans">
+          <aside className={`${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0 absolute md:relative z-40 transition-transform duration-300 ease-in-out w-64 h-full bg-white border-r flex flex-col print-hide shadow-2xl md:shadow-none`}>
+            <div className="p-6 border-b flex justify-between items-start">
               <div>
-                <h1 className="text-xl font-bold text-blue-700 flex items-center gap-2"><Icon name="Users" size={24} className="text-blue-600" />中2A クラスノート</h1>
-                <div className="flex items-center gap-3 mt-2">
-                  <span className="text-[10px] font-mono bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded border border-slate-200">v1.8.1</span>
-                  {isCloudReady ? (
-                    saveStatus === 'saving' ? ( <span className="flex items-center gap-1.5 text-[10px] text-amber-600 font-bold bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200"><Icon name="Loader2" size={10} className="animate-spin" /> 保存中...</span> ) : ( <span className="flex items-center gap-1.5 text-[10px] text-emerald-600 font-bold bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-100"><span className="relative flex h-2 w-2"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span><span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span></span> 自動同期ON</span> )
-                  ) : ( <span className="flex items-center gap-1.5 text-[10px] text-slate-400 font-bold bg-slate-50 px-1.5 py-0.5 rounded border border-slate-200"><span className="relative inline-flex rounded-full h-2 w-2 bg-slate-300"></span> 同期OFF</span> )}
+                <h1 className="text-xl font-bold text-blue-700 flex items-center gap-2"><Icon name="Users" size={24} className="text-blue-600"/>中2A クラスノート</h1>
+                <div className="flex items-center gap-2 mt-2">
+                  <span className="text-[10px] font-mono bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded border">v1.9.4</span>
+                  {isCloudReady ? (saveStatus === 'saving' ? <span className="flex items-center gap-1 text-[10px] text-amber-600 font-bold bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200"><Icon name="Loader2" size={10} className="animate-spin"/> 保存中</span> : <span className="flex items-center gap-1 text-[10px] text-emerald-600 font-bold bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-100">自動同期ON</span>) : <span className="text-[10px] text-slate-400 font-bold bg-slate-50 px-1.5 py-0.5 rounded border">同期OFF</span>}
                 </div>
               </div>
-              <button className="md:hidden text-slate-500 p-1 -mr-2" onClick={() => setIsMobileMenuOpen(false)}>×</button>
+              <button className="md:hidden text-slate-500 p-1 -mr-2" onClick={() => setIsMobileMenuOpen(false)}><Icon name="X" size={20}/></button>
             </div>
-            
             <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
-              <NavItem icon={<Icon name="Target" size={20}/>} label="クラス目標・状況" active={activeTab === 'dashboard'} onClick={() => {setActiveTab('dashboard'); setSelectedStudentId(null); setSelectedIncidentId(null); setIsMobileMenuOpen(false);}} />
-              <NavItem icon={<Icon name="Users" size={20}/>} label="生徒一覧・個人記録" active={activeTab === 'students'} onClick={() => {setActiveTab('students'); setSelectedStudentId(null); setSelectedIncidentId(null); setIsMobileMenuOpen(false);}} />
-              <NavItem icon={<Icon name="ClipboardList" size={20}/>} label="生徒詳細情報" active={activeTab === 'student_details'} onClick={() => {setActiveTab('student_details'); setSelectedStudentId(null); setSelectedIncidentId(null); setIsMobileMenuOpen(false);}} />
-              <NavItem icon={<Icon name="FileSpreadsheet" size={20}/>} label="定期考査 成績" active={activeTab === 'grades'} onClick={() => {setActiveTab('grades'); setSelectedStudentId(null); setSelectedIncidentId(null); setIsMobileMenuOpen(false);}} />
-              <NavItem icon={<Icon name="LineChart" size={20}/>} label="模試成績 (学力推移)" active={activeTab === 'mock_grades'} onClick={() => {setActiveTab('mock_grades'); setSelectedStudentId(null); setSelectedIncidentId(null); setIsMobileMenuOpen(false);}} />
-              <NavItem icon={<Icon name="Calendar" size={20}/>} label="クラスの出来事" active={activeTab === 'events'} onClick={() => {setActiveTab('events'); setSelectedStudentId(null); setSelectedIncidentId(null); setIsMobileMenuOpen(false);}} />
-              <NavItem icon={<Icon name="Lightbulb" size={20}/>} label="アイデア・学び" active={activeTab === 'ideas'} onClick={() => {setActiveTab('ideas'); setSelectedStudentId(null); setSelectedIncidentId(null); setIsMobileMenuOpen(false);}} />
-              <NavItem icon={<Icon name="CheckSquare" size={20}/>} label="ToDoリスト" active={activeTab === 'todos'} onClick={() => {setActiveTab('todos'); setSelectedStudentId(null); setSelectedIncidentId(null); setIsMobileMenuOpen(false);}} />
-              <NavItem icon={<Icon name="AlertTriangle" size={20}/>} label="生徒・保護者対応" active={activeTab === 'incidents'} onClick={() => {setActiveTab('incidents'); setSelectedStudentId(null); setSelectedIncidentId(null); setIsMobileMenuOpen(false);}} />
+              {navs.map(n => <NavItem key={n.id} icon={<Icon name={n.i} size={20}/>} label={n.l} active={activeTab===n.id} onClick={()=>{setActiveTab(n.id);setSelectedStudentId(null);setSelectedIncidentId(null);setIsMobileMenuOpen(false);}} />)}
             </nav>
-            
-            <div className="p-4 border-t border-slate-100 bg-slate-50/50 space-y-3">
-              <div className="border border-slate-200 bg-white rounded-lg overflow-hidden">
-                <button onClick={() => setIsConfigOpen(!isConfigOpen)} className="w-full flex items-center justify-between p-2 bg-slate-100 hover:bg-slate-200 transition-colors text-xs font-bold text-slate-600">
-                  <span className="flex items-center gap-1"><Icon name="Settings" size={12}/> ⚙️ 独自のFirebaseを使う</span><Icon name="ChevronDown" size={14} className={`transform transition-transform ${isConfigOpen ? 'rotate-180' : ''}`} />
-                </button>
+            <div className="p-4 border-t bg-slate-50/50 space-y-3">
+              <div className="border bg-white rounded-lg overflow-hidden">
+                <button onClick={() => setIsConfigOpen(!isConfigOpen)} className="w-full flex items-center justify-between p-2 bg-slate-100 hover:bg-slate-200 text-xs font-bold text-slate-600"><span className="flex items-center gap-1"><Icon name="Settings" size={12}/> Firebase設定</span><Icon name="ChevronDown" size={14} className={isConfigOpen ? 'rotate-180' : ''} /></button>
                 {isConfigOpen && (
                   <div className="p-3 bg-white space-y-2">
-                    {customFirebaseConfig ? <p className="text-[10px] text-emerald-600 font-bold mb-2">✅ 現在独自の設定が有効です</p> : <p className="text-[10px] text-slate-500 mb-2">Firebaseコンソールの設定コードを貼り付けてください</p>}
-                    <textarea className="w-full p-2 border border-slate-300 rounded bg-slate-50 text-[9px] font-mono h-24 focus:ring-2 outline-none resize-none" placeholder={`{\n  apiKey: "AIzaSy...",\n  authDomain: "...",\n  projectId: "...",\n  ...\n}`} value={typeof configInput === 'string' ? configInput : JSON.stringify(configInput, null, 2)} onChange={e => setConfigInput(e.target.value)} />
-                    {firebaseInitError && <p className="text-[10px] text-red-500 leading-tight">{firebaseInitError}</p>}
-                    <button onClick={handleSaveFirebaseConfig} className="w-full py-1.5 bg-slate-800 text-white rounded text-[10px] font-bold hover:bg-slate-700 transition-colors">{configInput && typeof configInput === 'string' && configInput.trim() ? "設定を保存して再読込" : "設定をクリアして再読込"}</button>
+                    {customFirebaseConfig ? <p className="text-[10px] text-emerald-600 font-bold">✅ 有効です</p> : <p className="text-[10px] text-slate-500">Configをペースト</p>}
+                    <textarea className="w-full p-2 border rounded bg-slate-50 text-[9px] font-mono h-24" value={typeof configInput === 'string' ? configInput : JSON.stringify(configInput, null, 2)} onChange={e => setConfigInput(e.target.value)} />
+                    {firebaseInitError && <p className="text-[10px] text-red-500">{firebaseInitError}</p>}
+                    <button onClick={handleSaveFirebaseConfig} className="w-full py-1.5 bg-slate-800 text-white rounded text-[10px] font-bold">保存/クリア</button>
                   </div>
                 )}
               </div>
-              <div className="text-xs font-bold text-slate-500 px-2 flex items-center gap-1 mt-2"><Icon name="Cloud" size={12}/> クラウド自動同期 (複数端末対応)</div>
-              <input type="text" placeholder="Sync IDを入力 (例: myclass2a)" className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs font-medium focus:ring-2 focus:ring-indigo-500 outline-none" value={syncId} onChange={e => setSyncId(e.target.value)} />
+              <div className="text-xs font-bold text-slate-500 px-2 flex items-center gap-1"><Icon name="Cloud" size={12}/> Sync ID</div>
+              <input type="text" placeholder="例: class2a" className="w-full px-3 py-2 border rounded-lg text-xs font-medium focus:ring-2 focus:ring-indigo-500" value={syncId} onChange={e => setSyncId(e.target.value)} />
               <div className="flex gap-2">
-                <button onClick={handlePushCloud} className="flex-1 flex items-center justify-center gap-1 px-2 py-2 bg-indigo-50 border border-indigo-200 hover:bg-indigo-100 text-indigo-700 rounded-lg transition-all text-[10px] font-bold"><Icon name="CloudUpload" size={12} /> 手動で上書き</button>
-                <button onClick={handlePullCloud} className="flex-1 flex items-center justify-center gap-1 px-2 py-2 bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 text-emerald-700 rounded-lg transition-all text-[10px] font-bold"><Icon name="CloudDownload" size={12} /> 手動で取得</button>
+                <button onClick={handlePushCloud} className="flex-1 flex justify-center gap-1 p-2 bg-indigo-50 text-indigo-700 rounded-lg text-[10px] font-bold border border-indigo-200"><Icon name="CloudUpload" size={12}/> 上書き</button>
+                <button onClick={handlePullCloud} className="flex-1 flex justify-center gap-1 p-2 bg-emerald-50 text-emerald-700 rounded-lg text-[10px] font-bold border border-emerald-200"><Icon name="CloudDownload" size={12}/> 取得</button>
               </div>
-              <div className="text-xs font-bold text-slate-500 px-2 flex items-center gap-1 mt-4 pt-2 border-t border-slate-200"><Icon name="Database" size={12}/> ローカル管理 (JSON)</div>
+              <div className="text-xs font-bold text-slate-500 px-2 flex items-center gap-1 pt-2 border-t"><Icon name="Database" size={12}/> JSON管理</div>
               <div className="flex gap-2">
-                <button onClick={handleExportBackup} className="flex-1 flex items-center justify-center gap-1 px-2 py-2 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 rounded-lg transition-all text-[10px] font-bold"><Icon name="Download" size={12} /> JSON保存</button>
+                <button onClick={handleExportBackup} className="flex-1 flex justify-center gap-1 p-2 bg-white text-slate-700 rounded-lg text-[10px] font-bold border"><Icon name="Download" size={12}/> 保存</button>
                 <input type="file" accept=".json" className="hidden" ref={fileBackupRef} onChange={handleImportBackup} />
-                <button onClick={() => fileBackupRef.current?.click()} className="flex-1 flex items-center justify-center gap-1 px-2 py-2 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 rounded-lg transition-all text-[10px] font-bold"><Icon name="Upload" size={12} /> JSON読込</button>
+                <button onClick={() => fileBackupRef.current?.click()} className="flex-1 flex justify-center gap-1 p-2 bg-white text-slate-700 rounded-lg text-[10px] font-bold border"><Icon name="Upload" size={12}/> 読込</button>
               </div>
-              <button onClick={() => setIsPrintingAll(true)} className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-blue-50 border border-blue-200 hover:bg-blue-100 text-blue-700 rounded-xl transition-all shadow-sm text-sm font-bold mt-2"><Icon name="Printer" size={18} /> 全員の記録をPDF</button>
+              <button onClick={() => setIsPrintingAll(true)} className="w-full flex justify-center gap-2 p-3 bg-blue-50 text-blue-700 rounded-xl text-sm font-bold border border-blue-200 mt-2"><Icon name="Printer" size={18}/> 全員をPDF出力</button>
             </div>
           </aside>
 
-          {/* Main */}
           <main className="flex-1 flex flex-col h-full overflow-hidden relative">
-            <div className="md:hidden bg-white border-b border-slate-200 p-4 flex items-center justify-between print:hidden z-10">
-              <div className="flex items-center gap-2"><button onClick={() => setIsMobileMenuOpen(true)} className="p-2 -ml-2 text-slate-600 hover:bg-slate-100 rounded-lg"><Icon name="Menu" size={24} /></button><span className="font-bold text-slate-800">中2A クラスノート</span></div>
+            <div className="md:hidden bg-white border-b p-4 flex items-center justify-between print-hide">
+              <div className="flex items-center gap-2"><button onClick={() => setIsMobileMenuOpen(true)} className="p-2 -ml-2 text-slate-600 hover:bg-slate-100 rounded-lg"><Icon name="Menu" size={24}/></button><span className="font-bold">中2A クラスノート</span></div>
               <div className="flex items-center gap-2">
-                <span className="text-[10px] font-mono bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded border border-slate-200">v1.8.1</span>
+                <span className="text-[10px] font-mono bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded border border-slate-200">v1.9.4</span>
                 {isCloudReady && ( saveStatus === 'saving' ? ( <span className="flex items-center gap-1 text-[10px] text-amber-600 font-bold bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200"><Icon name="Loader2" size={10} className="animate-spin" /> 保存中</span> ) : ( <span className="relative flex h-2 w-2"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span><span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span></span> ) )}
               </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-4 md:p-8 print:p-0 print:overflow-visible relative">
-              {activeTab === 'dashboard' && !selectedStudentId && (
+            <div className="flex-1 overflow-y-auto p-4 md:p-8 relative">
+              {activeTab === 'dashboard' && (
                 <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in duration-300">
-                  <header className="mb-8">
-                    <h2 className="text-2xl font-bold text-slate-800">クラス目標・状況</h2>
-                    <p className="text-slate-500 mt-2">担任としての目標や、学期・月ごとのクラスの様子を記録します。</p>
-                  </header>
-                  <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-                    <label className="block text-sm font-bold text-slate-700 mb-2 flex items-center gap-2"><Icon name="Target" size={18} className="text-blue-600" /> 年間クラス目標</label>
-                    <textarea className="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none min-h-[120px]" placeholder="例：笑顔が絶えず、互いを思いやれるクラスにする..." value={goals.year || ''} onChange={(e) => handleUpdateGoal('year', e.target.value)} />
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    {['term1', 'term2', 'term3'].map((term, idx) => (
-                      <div key={term} className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col">
-                        <label className="block text-sm font-bold text-slate-700 mb-2">{idx + 1}学期の振り返り</label>
-                        <textarea className="w-full flex-1 p-4 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none min-h-[160px]" placeholder={`${idx + 1}学期のクラスの様子や反省点...`} value={goals[term] || ''} onChange={(e) => handleUpdateGoal(term, e.target.value)} />
-                      </div>
-                    ))}
-                  </div>
-                  <div className="space-y-6">
-                    <h3 className="text-xl font-bold text-slate-800 border-b-2 border-slate-100 pb-2">月間目標・振り返り</h3>
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                      {[4, 5, 6, 7, 8, 9, 10, 11, 12, 1, 2, 3].map(month => (
-                        <div key={month} className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
-                          <h4 className="font-bold text-lg text-indigo-700 mb-3">{month}月</h4>
-                          <div className="space-y-4">
-                            <div>
-                              <label className="block text-xs font-bold text-slate-500 mb-1">目標</label>
-                              <textarea className="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none min-h-[80px] text-sm" placeholder={`${month}月の目標...`} value={goals[`month_${month}_goal`] || ''} onChange={(e) => handleUpdateGoal(`month_${month}_goal`, e.target.value)} />
-                            </div>
-                            <div>
-                              <label className="block text-xs font-bold text-slate-500 mb-1">振り返り</label>
-                              <textarea className="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none min-h-[80px] text-sm" placeholder={`${month}月の振り返り...`} value={goals[`month_${month}_reflection`] || ''} onChange={(e) => handleUpdateGoal(`month_${month}_reflection`, e.target.value)} />
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
+                  <header className="mb-8"><h2 className="text-2xl font-bold">クラス目標・状況</h2></header>
+                  <div className="bg-white p-6 rounded-2xl shadow-sm border"><label className="block font-bold mb-2 flex items-center gap-1"><Icon name="Target" size={18} className="text-blue-600"/> 年間クラス目標</label><textarea className="w-full p-4 bg-slate-50 border rounded-xl min-h-[100px] focus:ring-2 focus:ring-blue-500" value={goals.year||''} onChange={e=>setGoals(p=>({...p,year:e.target.value}))} /></div>
+                  <div className="grid md:grid-cols-3 gap-6">{['term1','term2','term3'].map((t,i) => <div key={t} className="bg-white p-6 rounded-2xl shadow-sm border flex flex-col"><label className="font-bold mb-2">{i+1}学期 目標</label><textarea className="w-full p-3 bg-slate-50 border rounded-xl min-h-[80px] mb-4 text-sm focus:ring-2 focus:ring-blue-500" value={goals[`${t}_goal`]||''} onChange={e=>setGoals(p=>({...p,[`${t}_goal`]:e.target.value}))} /><label className="font-bold mb-2">{i+1}学期 振り返り</label><textarea className="w-full flex-1 p-3 bg-slate-50 border rounded-xl min-h-[120px] text-sm focus:ring-2 focus:ring-blue-500" value={goals[t]||''} onChange={e=>setGoals(p=>({...p,[t]:e.target.value}))} /></div>)}</div>
+                  <div className="space-y-6"><h3 className="text-xl font-bold border-b pb-2">月間目標・振り返り</h3><div className="grid lg:grid-cols-2 gap-6">{[4,5,6,7,8,9,10,11,12,1,2,3].map(m => <div key={m} className="bg-white p-5 rounded-2xl shadow-sm border"><h4 className="font-bold text-indigo-700 mb-3">{m}月</h4><div className="space-y-3"><div><label className="text-xs font-bold text-slate-500">目標</label><textarea className="w-full p-3 bg-slate-50 border rounded-lg h-16 text-sm focus:ring-2 focus:ring-blue-500" value={goals[`month_${m}_goal`]||''} onChange={e=>setGoals(p=>({...p,[`month_${m}_goal`]:e.target.value}))} /></div><div><label className="text-xs font-bold text-slate-500">振り返り</label><textarea className="w-full p-3 bg-slate-50 border rounded-lg h-16 text-sm focus:ring-2 focus:ring-blue-500" value={goals[`month_${m}_reflection`]||''} onChange={e=>setGoals(p=>({...p,[`month_${m}_reflection`]:e.target.value}))} /></div></div></div>)}</div></div>
                 </div>
               )}
-
+              {activeTab === 'principles' && <PrinciplesView principles={principles} setPrinciples={setPrinciples} showToast={showToast} confirmDialog={confirmDialog} />}
               {activeTab === 'students' && !selectedStudentId && (
                 <div className="max-w-6xl mx-auto animate-in fade-in duration-300">
-                  <header className="mb-8 flex justify-between items-end flex-wrap gap-4">
-                    <div>
-                      <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-2">生徒一覧 <span className="text-base font-normal text-slate-500 bg-slate-200 px-3 py-1 rounded-full">{INITIAL_STUDENTS.length}名</span></h2>
-                      <p className="text-slate-500 mt-2">生徒をクリックすると、個別の記録やPDF出力が行えます。</p>
-                    </div>
-                  </header>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                    {INITIAL_STUDENTS.map(student => {
-                      const count = (records[student.id] || []).length;
-                      const details = studentDetails[student.id] || {};
-                      return (
-                        <div key={student.id} onClick={() => setSelectedStudentId(student.id)} className="group bg-white p-5 rounded-2xl shadow-sm border border-slate-200 hover:border-blue-400 cursor-pointer flex flex-col justify-between">
-                          <div className="flex justify-between items-start mb-2">
-                            <span className="text-xs font-bold text-slate-400 bg-slate-100 px-2 py-1 rounded-md">{student.number}番</span>
-                            {count > 0 && <span className="flex items-center gap-1 text-xs font-medium text-blue-600 bg-blue-50 px-2 py-1 rounded-full"><Icon name="BookOpen" size={12} /> 記録 {count}件</span>}
-                          </div>
-                          <div className="mb-3">
-                            <div className="text-xs text-slate-500 mb-1">{student.kana}</div>
-                            <div className="text-xl font-bold text-slate-800 flex items-center justify-between">
-                              <div className="flex items-center gap-2">
-                                {student.name}
-                                {details.scholarship && <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 border border-amber-200">{details.scholarship}</span>}
-                              </div>
-                              <Icon name="ChevronRight" size={18} className="text-slate-300 group-hover:text-blue-500 transition-all" />
-                            </div>
-                          </div>
-                          {(details.club || details.committee) && (
-                            <div className="mt-auto pt-3 border-t border-slate-100 flex flex-wrap gap-1">
-                              {details.club && <span className="text-[10px] bg-indigo-50 text-indigo-700 px-2 py-1 rounded-full border border-indigo-100 line-clamp-1">{details.club}</span>}
-                              {details.committee && <span className="text-[10px] bg-emerald-50 text-emerald-700 px-2 py-1 rounded-full border border-emerald-100 line-clamp-1">{details.committee}</span>}
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
+                  <header className="mb-8"><h2 className="text-2xl font-bold">生徒一覧 <span className="text-base font-normal text-slate-500 bg-slate-200 px-3 py-1 rounded-full">{INITIAL_STUDENTS.length}名</span></h2></header>
+                  <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">{INITIAL_STUDENTS.map(s => { 
+                    const c = (records[s.id]||[]).length; const d = studentDetails[s.id]||{}; 
+                    let lG = null, lTN = ''; for (let i = TEST_TERMS.length - 1; i >= 0; i--) { const g = grades[TEST_TERMS[i].id]?.[s.id]; if (g && g.total) { lG = g; lTN = TEST_TERMS[i].name; break; } }
+                    let lM = null, lMN = ''; for (let i = MOCK_EXAMS.length - 1; i >= 0; i--) { const m = mockGrades[MOCK_EXAMS[i].id]?.[s.id]; if (m && m.total_dev) { lM = m; lMN = MOCK_EXAMS[i].name; break; } }
+                    return <div key={s.id} onClick={()=>setSelectedStudentId(s.id)} className="bg-white p-5 rounded-2xl shadow-sm border hover:border-blue-400 cursor-pointer flex flex-col justify-between group">
+                      <div className="flex justify-between items-start mb-2"><span className="text-xs font-bold bg-slate-100 px-2 py-1 rounded">{s.number}番</span>{c>0&&<span className="text-xs font-medium text-blue-600 bg-blue-50 px-2 py-1 rounded-full flex gap-1 items-center"><Icon name="BookOpen" size={12}/> 記録 {c}件</span>}</div>
+                      <div className="mb-3"><div className="text-xs text-slate-500">{s.kana}</div><div className="text-xl font-bold flex justify-between items-center"><div className="flex gap-2 items-center">{s.name}{d.scholarship&&<span className="text-[10px] px-1.5 py-0.5 bg-amber-100 text-amber-700 rounded">{d.scholarship}</span>}</div><Icon name="ChevronRight" size={18} className="text-slate-300 group-hover:text-blue-500"/></div></div>
+                      {(lG || lM) && (<div className="mt-1 mb-3 grid grid-cols-2 gap-2">{lG && <div className="bg-blue-50 p-2 rounded-lg border border-blue-100"><div className="text-[9px] text-blue-600 font-bold truncate">{lTN}</div><div className="text-sm font-extrabold text-blue-800">{lG.total}<span className="text-[10px] font-normal ml-0.5">点</span></div>{lG.class_rank && <div className="text-[9px] text-blue-600 mt-0.5">級位: {lG.class_rank}</div>}</div>}{lM && <div className="bg-indigo-50 p-2 rounded-lg border border-indigo-100"><div className="text-[9px] text-indigo-600 font-bold truncate">{lMN}</div><div className="text-sm font-extrabold text-indigo-800">偏差値 {lM.total_dev}</div></div>}</div>)}
+                      {(d.club||d.committee)&&<div className="mt-auto pt-3 border-t flex flex-wrap gap-1">{d.club&&<span className="text-[10px] bg-indigo-50 text-indigo-700 px-2 py-1 rounded-full truncate">{d.club}</span>}{d.committee&&<span className="text-[10px] bg-emerald-50 text-emerald-700 px-2 py-1 rounded-full truncate">{d.committee}</span>}</div>}
+                    </div>; 
+                  })}</div>
                 </div>
               )}
-
-              {activeTab === 'students' && selectedStudentId && (
-                <StudentDetail 
-                  student={INITIAL_STUDENTS.find(s => s.id === selectedStudentId)} records={records[selectedStudentId] || []}
-                  studentGrades={TEST_TERMS.reduce((acc, term) => { acc[term.id] = grades[term.id]?.[selectedStudentId] || null; return acc; }, {})}
-                  studentMockGrades={MOCK_EXAMS.reduce((acc, mock) => { acc[mock.id] = mockGrades[mock.id]?.[selectedStudentId] || null; return acc; }, {})}
-                  details={studentDetails[selectedStudentId] || {}}
-                  onUpdateDetails={(newDetails) => { setStudentDetails(prev => ({ ...prev, [selectedStudentId]: newDetails })); showToast("生徒詳細情報を更新しました。"); }}
-                  onSaveRecord={(record, recordId) => handleSaveRecord(selectedStudentId, record, recordId)} 
-                  onDeleteRecord={(recordId) => handleDeleteRecord(selectedStudentId, recordId)}
-                  onBack={() => setSelectedStudentId(null)} isPrintAllMode={false}
-                />
-              )}
-
-              {activeTab === 'student_details' && <StudentDetailsView studentDetails={studentDetails} setStudentDetails={setStudentDetails} students={INITIAL_STUDENTS} showToast={showToast} />}
-              {activeTab === 'grades' && <GradesView grades={grades} setGrades={setGrades} students={INITIAL_STUDENTS} testTerms={TEST_TERMS} showToast={showToast} />}
-              {activeTab === 'mock_grades' && <MockGradesView mockGrades={mockGrades} setMockGrades={setMockGrades} students={INITIAL_STUDENTS} mockExams={MOCK_EXAMS} showToast={showToast} />}
-              {activeTab === 'ideas' && <IdeasView ideas={ideas} setIdeas={setIdeas} showToast={showToast} />}
-              {activeTab === 'todos' && <TodosView todos={todos} setTodos={setTodos} showToast={showToast} />}
-              
-              {activeTab === 'incidents' && !selectedIncidentId && (
-                <IncidentsView incidents={incidents} setIncidents={setIncidents} students={INITIAL_STUDENTS} onSelectIncident={(id) => setSelectedIncidentId(id)} showToast={showToast} />
-              )}
-              {activeTab === 'incidents' && selectedIncidentId && (
-                <IncidentDetail incident={incidents.find(i => i.id === selectedIncidentId)} students={INITIAL_STUDENTS} setIncidents={setIncidents} onBack={() => setSelectedIncidentId(null)} onPrint={() => { setPrintingIncidentId(selectedIncidentId); setIsPrintingIncident(true); }} showToast={showToast} />
-              )}
-              
+              {activeTab === 'students' && selectedStudentId && <StudentDetail student={INITIAL_STUDENTS.find(s=>s.id===selectedStudentId)} records={records[selectedStudentId]||[]} studentGrades={TEST_TERMS.reduce((a,t)=>({...a,[t.id]:grades[t.id]?.[selectedStudentId]||null}),{})} studentMockGrades={MOCK_EXAMS.reduce((a,m)=>({...a,[m.id]:mockGrades[m.id]?.[selectedStudentId]||null}),{})} details={studentDetails[selectedStudentId]||{}} onUpdateDetails={d=>{setStudentDetails(p=>({...p,[selectedStudentId]:d}));showToast("更新しました");}} onSaveRecord={(r,id)=>{setRecords(p=>({...p,[selectedStudentId]:(id?(p[selectedStudentId]||[]).map(x=>x.id===id?{...r,id}:x):[{...r,id:Date.now()},...(p[selectedStudentId]||[])]).sort((a,b)=>new Date(b.date)-new Date(a.date))}));showToast("保存完了");}} onDeleteRecord={id=>confirmDialog("削除しますか？", () => {setRecords(p=>({...p,[selectedStudentId]:(p[selectedStudentId]||[]).filter(x=>x.id!==id)}));showToast("削除済");})} onBack={()=>setSelectedStudentId(null)} isPrint={false} />}
+              {activeTab === 'student_details' && <StudentDetailsView details={studentDetails} setDetails={setStudentDetails} students={INITIAL_STUDENTS} showToast={showToast} />}
+              {activeTab === 'grades' && <GradesView grades={grades} setGrades={setGrades} students={INITIAL_STUDENTS} terms={TEST_TERMS} showToast={showToast} />}
+              {activeTab === 'mock_grades' && <MockGradesView mockGrades={mockGrades} setMockGrades={setMockGrades} students={INITIAL_STUDENTS} mocks={MOCK_EXAMS} showToast={showToast} />}
+              {activeTab === 'ideas' && <IdeasView ideas={ideas} setIdeas={setIdeas} showToast={showToast} confirmDialog={confirmDialog} />}
+              {activeTab === 'todos' && <TodosView todos={todos} setTodos={setTodos} showToast={showToast} confirmDialog={confirmDialog} />}
+              {activeTab === 'incidents' && !selectedIncidentId && <IncidentsView incidents={incidents} setIncidents={setIncidents} students={INITIAL_STUDENTS} onSelect={id=>setSelectedIncidentId(id)} showToast={showToast} confirmDialog={confirmDialog} />}
+              {activeTab === 'incidents' && selectedIncidentId && <IncidentDetail inc={incidents.find(i=>i.id===selectedIncidentId)} students={INITIAL_STUDENTS} setInc={setIncidents} onBack={()=>setSelectedIncidentId(null)} onPrint={()=>{setPrintingIncidentId(selectedIncidentId);setIsPrintingIncident(true);}} showToast={showToast} confirmDialog={confirmDialog} />}
               {activeTab === 'events' && (
                 <div className="max-w-4xl mx-auto animate-in fade-in duration-300">
-                   <header className="mb-8">
-                    <h2 className="text-2xl font-bold text-slate-800">クラスの出来事</h2>
-                    <p className="text-slate-500 mt-2">体育祭や合唱コンクール、日常の大きな出来事を記録します。</p>
-                  </header>
-                  <div className={`bg-white p-6 rounded-2xl shadow-sm border mb-8 transition-colors ${editingEventId ? 'border-blue-400 ring-2 ring-blue-50' : 'border-slate-200'}`}>
-                    <h3 className="text-lg font-bold text-slate-700 mb-4 flex items-center gap-2">
-                      <Icon name={editingEventId ? "Edit3" : "Plus"} size={20} className="text-blue-600" /> 
-                      {editingEventId ? "出来事を編集" : "新しい出来事を記録"}
-                    </h3>
-                    <EventForm 
-                      initialData={editingEventData} 
-                      onSave={handleSaveClassEvent} 
-                      isEditing={!!editingEventId}
-                      onCancel={() => { setEditingEventId(null); setEditingEventData(null); }}
-                    />
+                  <header className="mb-8"><h2 className="text-2xl font-bold">クラスの出来事</h2></header>
+                  <div className={`bg-white p-6 rounded-2xl shadow-sm border mb-8 ${editingEventId ? 'border-blue-400 ring-2 ring-blue-50' : ''}`}>
+                    <h3 className="font-bold mb-4 flex items-center gap-2"><Icon name={editingEventId?"Edit3":"Plus"} size={20} className="text-blue-600"/> {editingEventId?"編集":"新規登録"}</h3>
+                    <EventForm initialData={editingEventData} isEditing={!!editingEventId} onCancel={()=>{setEditingEventId(null);setEditingEventData(null)}} onSave={(ev)=>{if(editingEventId){setEvents(p=>p.map(x=>x.id===editingEventId?{...ev,id:editingEventId}:x).sort((a,b)=>new Date(b.date)-new Date(a.date)));showToast("更新済");}else{setEvents(p=>[{...ev,id:Date.now()},...p].sort((a,b)=>new Date(b.date)-new Date(a.date)));showToast("保存済");}setEditingEventId(null);setEditingEventData(null);}} />
                   </div>
-                  <div className="space-y-6">
-                    {events.length > 0 ? events.map(event => (
-                      <div key={event.id} className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 group relative hover:shadow-md transition-shadow">
-                        <div className="absolute top-4 right-4 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity print:hidden">
-                          <button onClick={() => handleEditClassEvent(event)} className="text-slate-400 hover:text-blue-600 bg-white rounded-full p-1.5 shadow-sm border border-slate-100"><Icon name="Edit3" size={16} /></button>
-                          <button onClick={() => handleDeleteClassEvent(event.id)} className="text-slate-400 hover:text-red-500 bg-white rounded-full p-1.5 shadow-sm border border-slate-100"><Icon name="Trash2" size={16} /></button>
-                        </div>
-                        <div className="flex justify-between items-center mb-4 gap-4 pr-16">
-                          <h4 className="text-xl font-bold text-slate-800">{event.title}</h4>
-                          <span className="bg-slate-100 text-slate-600 px-4 py-1.5 rounded-full text-sm font-medium border border-slate-200 flex items-center gap-2"><Icon name="Calendar" size={14} /> {event.date}</span>
-                        </div>
-                        <p className="whitespace-pre-wrap text-slate-700 bg-slate-50 p-4 rounded-xl border border-slate-100">{event.content}</p>
-                      </div>
-                    )) : (
-                      <div className="text-center py-12 bg-white rounded-2xl border border-dashed border-slate-200"><p className="text-slate-500">まだ記録はありません。</p></div>
-                    )}
-                  </div>
+                  <div className="space-y-6">{events.length>0 ? events.map(ev=>(<div key={ev.id} className="bg-white p-6 rounded-2xl shadow-sm border group relative"><div className="absolute top-4 right-4 flex gap-1 opacity-0 group-hover:opacity-100"><button onClick={()=>{setEditingEventId(ev.id);setEditingEventData(ev);window.scrollTo(0,0)}} className="p-1 text-slate-400 hover:text-blue-600"><Icon name="Edit3" size={16}/></button><button onClick={()=>{confirmDialog("出来事を削除しますか？", ()=>{setEvents(p=>p.filter(e=>e.id!==ev.id));if(editingEventId===ev.id){setEditingEventId(null);setEditingEventData(null);}})}} className="p-1 text-slate-400 hover:text-red-500"><Icon name="Trash2" size={16}/></button></div><div className="flex justify-between items-center mb-4 pr-16"><h4 className="font-bold text-xl">{ev.title}</h4><span className="text-sm font-bold bg-slate-100 px-3 py-1 rounded-full">{ev.date}</span></div><p className="whitespace-pre-wrap text-slate-700 bg-slate-50 p-4 rounded-xl border">{ev.content}</p></div>)) : <div className="text-center py-12 bg-white rounded-xl border border-dashed text-slate-500">出来事はありません。</div>}</div>
                 </div>
               )}
             </div>
             
-            {toast && (
-              <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-slate-800 text-white px-6 py-3 rounded-xl shadow-2xl flex items-center gap-3 z-50 animate-in fade-in slide-in-from-bottom-4 duration-300">
-                <Icon name="Check" size={18} className="text-emerald-400" />
-                <span className="font-bold text-sm">{toast}</span>
+            {toast && <div className="fixed bottom-4 left-1/2 -translate-x-1/2 bg-slate-800 text-white px-6 py-3 rounded-xl shadow-2xl flex items-center gap-2 z-50 animate-in fade-in slide-in-from-bottom-4 duration-300"><Icon name="Check" size={18} className="text-emerald-400" /><span className="font-bold text-sm">{toast}</span></div>}
+            
+            {confirmState && (
+              <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-[100] animate-in fade-in duration-200">
+                <div className="bg-white p-6 rounded-2xl shadow-xl max-w-sm w-full mx-4">
+                  <p className="font-bold mb-6 text-center text-slate-800">{confirmState.msg}</p>
+                  <div className="flex justify-center gap-3">
+                    <button onClick={()=>setConfirmState(null)} className="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 rounded-xl font-bold text-slate-600 transition-colors">キャンセル</button>
+                    <button onClick={()=>{confirmState.onConfirm();setConfirmState(null);}} className="px-5 py-2.5 bg-red-500 hover:bg-red-600 text-white rounded-xl font-bold shadow-sm transition-colors">削除する</button>
+                  </div>
+                </div>
               </div>
             )}
           </main>
         </div>
-      );
-    }
-
-    // === Components ===
-
-    function IncidentsView({ incidents, setIncidents, students, onSelectIncident, showToast }) {
-      const [newIncident, setNewIncident] = useState({ title: '', date: new Date().toISOString().split('T')[0], involvedStudents: [] });
-      const [editingId, setEditingId] = useState(null);
-
-      const handleSaveIncident = (e) => {
-        e.preventDefault();
-        if (!newIncident.title.trim()) return;
-        
-        if (editingId) {
-          setIncidents(prev => prev.map(inc => inc.id === editingId ? { ...inc, ...newIncident } : inc).sort((a,b) => new Date(b.date) - new Date(a.date)));
-          setEditingId(null);
-          showToast("事案を更新しました。");
-        } else {
-          const incident = { ...newIncident, id: Date.now(), status: 'active', events: [] };
-          setIncidents(prev => [incident, ...prev].sort((a,b) => new Date(b.date) - new Date(a.date)));
-          showToast("新しい事案を登録しました。");
-        }
-        setNewIncident({ title: '', date: new Date().toISOString().split('T')[0], involvedStudents: [] });
-      };
-
-      const handleStudentToggle = (studentId) => {
-        setNewIncident(prev => {
-          const isSelected = prev.involvedStudents.includes(studentId);
-          if (isSelected) { return { ...prev, involvedStudents: prev.involvedStudents.filter(id => id !== studentId) }; } 
-          else { return { ...prev, involvedStudents: [...prev.involvedStudents, studentId] }; }
-        });
-      };
-
-      const handleEdit = (inc, e) => {
-        e.stopPropagation();
-        setNewIncident({ title: inc.title, date: inc.date, involvedStudents: inc.involvedStudents || [] });
-        setEditingId(inc.id);
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      };
-
-      const handleDelete = (id, e) => {
-        e.stopPropagation();
-        if (window.confirm("この事案を削除しますか？\n（関連する対応記録もすべて削除されます）")) {
-          setIncidents(prev => prev.filter(inc => inc.id !== id));
-          if (editingId === id) {
-            setEditingId(null);
-            setNewIncident({ title: '', date: new Date().toISOString().split('T')[0], involvedStudents: [] });
-          }
-          showToast("事案を削除しました。");
-        }
-      };
-
-      return (
-        <div className="max-w-4xl mx-auto animate-in fade-in duration-300">
-          <header className="mb-8">
-            <h2 className="text-2xl font-bold text-slate-800">生徒・保護者対応</h2>
-            <p className="text-slate-500 mt-2">発生したトラブルや対応事案ごとに、関わった生徒と時系列の対応記録を管理します。</p>
-          </header>
-          <div className={`bg-white p-6 rounded-2xl shadow-sm border mb-8 transition-colors ${editingId ? 'border-blue-400 ring-2 ring-blue-50' : 'border-slate-200'}`}>
-            <h3 className="text-lg font-bold text-slate-700 mb-4 flex items-center gap-2">
-              <Icon name={editingId ? "Edit3" : "Plus"} size={20} className="text-blue-600" /> 
-              {editingId ? "事案情報を編集" : "新しい事案を登録"}
-            </h3>
-            <form onSubmit={handleSaveIncident} className="space-y-4">
-              <div className="flex flex-wrap gap-4">
-                <div className="flex-[2] min-w-[200px]">
-                  <label className="block text-xs font-bold text-slate-500 mb-1">件名 (トラブルの概要)</label>
-                  <input type="text" required placeholder="例: 〇〇さんと△△さんのSNSトラブル" className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500" value={newIncident.title} onChange={e => setNewIncident({...newIncident, title: e.target.value})} />
-                </div>
-                <div className="flex-1 min-w-[120px]">
-                  <label className="block text-xs font-bold text-slate-500 mb-1">発生日</label>
-                  <input type="date" required className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500" value={newIncident.date} onChange={e => setNewIncident({...newIncident, date: e.target.value})} />
-                </div>
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-slate-500 mb-1">関わった生徒 (複数選択可)</label>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-2 max-h-48 overflow-y-auto p-3 border border-slate-200 rounded-xl bg-slate-50">
-                  {students.map(s => (
-                    <label key={s.id} className="flex items-center gap-2 text-sm cursor-pointer hover:bg-slate-100 p-1.5 rounded transition-colors select-none">
-                      <input type="checkbox" className="w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500" checked={newIncident.involvedStudents.includes(s.id)} onChange={() => handleStudentToggle(s.id)} />
-                      <span className="truncate">{s.number}. {s.name}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-              <div className="flex justify-end gap-2 pt-2">
-                {editingId && (
-                  <button type="button" onClick={() => { setEditingId(null); setNewIncident({ title: '', date: new Date().toISOString().split('T')[0], involvedStudents: [] }); }} className="flex items-center gap-2 px-4 py-3 bg-slate-100 text-slate-600 rounded-xl font-bold text-sm hover:bg-slate-200"><Icon name="X" size={18} /> キャンセル</button>
-                )}
-                <button type="submit" className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-xl font-bold text-sm hover:bg-blue-700 shadow-sm transition-all"><Icon name="Save" size={18} /> {editingId ? "更新する" : "事案を登録"}</button>
-              </div>
-            </form>
-          </div>
-          <div className="space-y-4">
-            {incidents.length > 0 ? incidents.map(incident => (
-              <div key={incident.id} onClick={() => onSelectIncident(incident.id)} className={`bg-white p-5 rounded-2xl border ${incident.status === 'active' ? 'border-amber-300 shadow-md ring-1 ring-amber-100' : 'border-slate-200 shadow-sm'} cursor-pointer hover:border-blue-400 transition-all group relative`}>
-                <div className="absolute top-4 right-12 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <button onClick={(e) => handleEdit(incident, e)} className="text-slate-400 hover:text-blue-600 bg-white rounded-full p-1.5 shadow-sm border border-slate-100"><Icon name="Edit3" size={16} /></button>
-                  <button onClick={(e) => handleDelete(incident.id, e)} className="text-slate-400 hover:text-red-500 bg-white rounded-full p-1.5 shadow-sm border border-slate-100"><Icon name="Trash2" size={16} /></button>
-                </div>
-                <div className="flex justify-between items-start mb-3 gap-4 pr-20">
-                  <div className="flex items-center gap-3">
-                    {incident.status === 'active' ? (
-                      <span className="bg-amber-100 text-amber-700 px-2.5 py-1 rounded-md text-xs font-bold flex items-center gap-1 border border-amber-200"><Icon name="AlertTriangle" size={12} /> 対応中</span>
-                    ) : (
-                      <span className="bg-slate-100 text-slate-600 px-2.5 py-1 rounded-md text-xs font-bold flex items-center gap-1 border border-slate-200"><Icon name="Check" size={12} /> 解決済み</span>
-                    )}
-                    <span className="text-sm font-bold text-slate-400">{incident.date}</span>
-                  </div>
-                  <Icon name="ChevronRight" size={20} className="text-slate-300 group-hover:text-blue-500 transition-colors absolute right-4 top-5" />
-                </div>
-                <h4 className={`text-lg font-bold ${incident.status === 'active' ? 'text-slate-800' : 'text-slate-600'} mb-3 pr-8`}>{incident.title}</h4>
-                <div className="flex flex-wrap gap-1.5">
-                  {incident.involvedStudents.map(id => {
-                    const st = students.find(s => s.id === id);
-                    return st ? <span key={id} className={`text-xs px-2 py-1 rounded-full border ${incident.status === 'active' ? 'bg-amber-50 text-amber-800 border-amber-200' : 'bg-slate-50 text-slate-500 border-slate-200'}`}>{st.name}</span> : null;
-                  })}
-                </div>
-              </div>
-            )) : (
-              <div className="text-center py-12 bg-white rounded-2xl border border-dashed border-slate-200">
-                <Icon name="AlertTriangle" size={48} className="mx-auto text-slate-300 mb-4" />
-                <p className="text-slate-500">登録された事案はありません。</p>
-              </div>
-            )}
-          </div>
-        </div>
-      );
-    }
-
-    function IncidentDetail({ incident, students, setIncidents, onBack, onPrint, showToast }) {
-      const [newEvent, setNewEvent] = useState({ datetime: new Date().toISOString().slice(0, 16), type: INCIDENT_EVENT_TYPES[0], content: '' });
-      const [editingEventId, setEditingEventId] = useState(null);
-
-      const handleSaveEvent = (e) => {
-        e.preventDefault();
-        if (!newEvent.content.trim()) return;
-        
-        if (editingEventId) {
-          setIncidents(prev => prev.map(inc => {
-            if (inc.id === incident.id) {
-              return { ...inc, events: inc.events.map(ev => ev.id === editingEventId ? { ...ev, ...newEvent } : ev) };
-            }
-            return inc;
-          }));
-          setEditingEventId(null);
-          showToast("対応記録を更新しました。");
-        } else {
-          const ev = { ...newEvent, id: Date.now() };
-          setIncidents(prev => prev.map(inc => {
-            if (inc.id === incident.id) { return { ...inc, events: [...(inc.events || []), ev] }; }
-            return inc;
-          }));
-          showToast("対応記録を追加しました。");
-        }
-        setNewEvent({ datetime: new Date().toISOString().slice(0, 16), type: INCIDENT_EVENT_TYPES[0], content: '' });
-      };
-
-      const handleEditEvent = (ev) => {
-        setNewEvent({ datetime: ev.datetime, type: ev.type, content: ev.content });
-        setEditingEventId(ev.id);
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      };
-
-      const handleDeleteEvent = (id) => {
-        if (window.confirm("この対応記録を削除しますか？")) {
-          setIncidents(prev => prev.map(inc => inc.id === incident.id ? { ...inc, events: inc.events.filter(e => e.id !== id) } : inc));
-          if (editingEventId === id) {
-            setEditingEventId(null);
-            setNewEvent({ datetime: new Date().toISOString().slice(0, 16), type: INCIDENT_EVENT_TYPES[0], content: '' });
-          }
-          showToast("対応記録を削除しました。");
-        }
-      };
-
-      const toggleStatus = () => {
-        const newStatus = incident.status === 'active' ? 'resolved' : 'active';
-        setIncidents(prev => prev.map(inc => inc.id === incident.id ? { ...inc, status: newStatus } : inc));
-        showToast(newStatus === 'resolved' ? "事案を解決済みに変更しました。" : "事案を対応中に戻しました。");
-      };
-
-      return (
-        <div className="max-w-4xl mx-auto animate-in fade-in duration-300">
-          <div className="print:hidden mb-6 flex gap-4 justify-between items-center">
-            <button onClick={onBack} className="flex items-center text-slate-500 hover:text-blue-600 font-medium px-4 py-2 hover:bg-white rounded-lg transition-colors"><Icon name="ArrowLeft" size={18} className="mr-2" /> 事案一覧に戻る</button>
-            <button onClick={onPrint} className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-xl font-medium text-sm shadow-sm hover:shadow-md transition-all"><Icon name="Printer" size={18} /> 報告書をPDF出力</button>
-          </div>
-          <div className={`bg-white p-8 rounded-2xl shadow-sm border mb-8 ${incident.status === 'active' ? 'border-amber-300 ring-2 ring-amber-50' : 'border-slate-200'}`}>
-            <div className="flex justify-between items-start mb-4">
-              <div className="flex items-center gap-3">
-                {incident.status === 'active' ? (
-                  <span className="bg-amber-100 text-amber-700 px-3 py-1.5 rounded-lg text-sm font-bold flex items-center gap-1.5 border border-amber-200"><Icon name="AlertTriangle" size={16} /> 対応中</span>
-                ) : (
-                  <span className="bg-slate-100 text-slate-600 px-3 py-1.5 rounded-lg text-sm font-bold flex items-center gap-1.5 border border-slate-200"><Icon name="Check" size={16} /> 解決済み</span>
-                )}
-                <span className="text-slate-500 font-bold bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-200">発生日: {incident.date}</span>
-              </div>
-              <button onClick={toggleStatus} className={`px-4 py-2 rounded-lg text-sm font-bold transition-colors ${incident.status === 'active' ? 'bg-slate-800 text-white hover:bg-slate-700' : 'bg-white border border-slate-300 text-slate-600 hover:bg-slate-50'}`}>
-                {incident.status === 'active' ? '解決済みにする' : '対応中に戻す'}
-              </button>
-            </div>
-            <h2 className="text-3xl font-extrabold text-slate-800 mb-6 leading-snug">{incident.title}</h2>
-            <div>
-              <h3 className="text-sm font-bold text-slate-500 mb-2">関わった生徒</h3>
-              <div className="flex flex-wrap gap-2">
-                {incident.involvedStudents.map(id => {
-                  const st = students.find(s => s.id === id);
-                  return st ? <span key={id} className="text-sm font-bold px-3 py-1.5 rounded-lg bg-blue-50 text-blue-800 border border-blue-200">{st.number}. {st.name}</span> : null;
-                })}
-              </div>
-            </div>
-          </div>
-          <div className={`bg-white p-6 rounded-2xl shadow-sm border mb-8 transition-colors ${editingEventId ? 'border-blue-400 ring-2 ring-blue-50' : 'border-slate-200'}`}>
-            <h3 className="text-lg font-bold text-slate-700 mb-4 flex items-center gap-2">
-              <Icon name={editingEventId ? "Edit3" : "Plus"} size={20} className="text-blue-600" /> 
-              {editingEventId ? "対応記録を編集" : "新しい対応を記録"}
-            </h3>
-            <form onSubmit={handleSaveEvent} className="space-y-4">
-              <div className="flex gap-4">
-                <div className="flex-[2] min-w-[200px]">
-                  <label className="block text-sm font-bold text-slate-600 mb-1">日時</label>
-                  <input type="datetime-local" required className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500" value={newEvent.datetime} onChange={e => setNewEvent({...newEvent, datetime: e.target.value})} />
-                </div>
-                <div className="flex-1 min-w-[150px]">
-                  <label className="block text-sm font-bold text-slate-600 mb-1">対応の種類</label>
-                  <select className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500" value={newEvent.type} onChange={e => setNewEvent({...newEvent, type: e.target.value})}>
-                    {INCIDENT_EVENT_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
-                  </select>
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-bold text-slate-600 mb-1">内容</label>
-                <textarea required placeholder="誰とどのような話をしたか、どのような対応をしたかを記録..." className="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 min-h-[120px] resize-y" value={newEvent.content} onChange={e => setNewEvent({...newEvent, content: e.target.value})} />
-              </div>
-              <div className="flex justify-end gap-2">
-                {editingEventId && (
-                  <button type="button" onClick={() => { setEditingEventId(null); setNewEvent({ datetime: new Date().toISOString().slice(0, 16), type: INCIDENT_EVENT_TYPES[0], content: '' }); }} className="flex items-center gap-2 px-4 py-3 bg-slate-100 text-slate-600 rounded-xl font-bold text-sm hover:bg-slate-200"><Icon name="X" size={18} /> キャンセル</button>
-                )}
-                <button type="submit" className="flex items-center gap-2 px-6 py-3 bg-slate-800 text-white rounded-xl font-bold text-sm hover:bg-slate-700 shadow-sm"><Icon name="Save" size={18} /> {editingEventId ? "更新する" : "記録を保存"}</button>
-              </div>
-            </form>
-          </div>
-          <div>
-            <h3 className="text-xl font-bold text-slate-800 border-b-2 border-slate-100 pb-3 mb-6">対応の時系列</h3>
-            <div className="space-y-6 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-slate-200 before:to-transparent">
-              {incident.events && incident.events.length > 0 ? (
-                [...incident.events].sort((a,b) => new Date(a.datetime) - new Date(b.datetime)).map((ev, idx) => {
-                  const dateObj = new Date(ev.datetime);
-                  const formattedDate = `${dateObj.getFullYear()}/${(dateObj.getMonth()+1).toString().padStart(2, '0')}/${dateObj.getDate().toString().padStart(2, '0')} ${dateObj.getHours().toString().padStart(2, '0')}:${dateObj.getMinutes().toString().padStart(2, '0')}`;
-                  return (
-                    <div key={ev.id} className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active">
-                      <div className="flex items-center justify-center w-10 h-10 rounded-full border-4 border-white bg-blue-500 text-white shadow shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 z-10"><Icon name="MessageCircle" size={16} /></div>
-                      <div className="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] bg-white p-5 rounded-2xl shadow-sm border border-slate-200 relative group-hover:shadow-md transition-shadow">
-                        <div className="absolute top-3 right-3 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity print:hidden">
-                          <button onClick={() => handleEditEvent(ev)} className="text-slate-400 hover:text-blue-600 bg-slate-50 hover:bg-white rounded-full p-1.5 shadow-sm border border-slate-100"><Icon name="Edit3" size={16} /></button>
-                          <button onClick={() => handleDeleteEvent(ev.id)} className="text-slate-400 hover:text-red-500 bg-slate-50 hover:bg-white rounded-full p-1.5 shadow-sm border border-slate-100"><Icon name="Trash2" size={16} /></button>
-                        </div>
-                        <div className="flex flex-wrap items-center gap-2 mb-3 pr-14">
-                          <span className="font-bold text-slate-500 text-xs">{formattedDate}</span>
-                          <span className="bg-slate-100 text-slate-600 px-2.5 py-1 rounded text-xs font-bold border border-slate-200">{ev.type}</span>
-                        </div>
-                        <p className="text-slate-700 leading-relaxed whitespace-pre-wrap">{ev.content}</p>
-                      </div>
-                    </div>
-                  );
-                })
-              ) : ( <div className="text-center py-12 relative z-10"><p className="text-slate-500 bg-slate-50 inline-block px-6 py-2 rounded-full border border-slate-200">まだ対応記録はありません。</p></div> )}
-            </div>
-          </div>
-        </div>
-      );
-    }
-
-    function IdeasView({ ideas, setIdeas, showToast }) {
-      const [newIdea, setNewIdea] = useState({ type: 'my_idea', content: '' });
-      const [editingId, setEditingId] = useState(null);
-      const [sortBy, setSortBy] = useState('date_desc');
-
-      const handleSaveIdea = (e) => {
-        e.preventDefault();
-        if (!newIdea.content.trim()) return;
-        
-        if (editingId) {
-          setIdeas(prev => prev.map(i => i.id === editingId ? { ...i, ...newIdea } : i));
-          setEditingId(null);
-          showToast("アイデアを更新しました。");
-        } else {
-          const idea = { ...newIdea, id: Date.now(), createdAt: Date.now(), dateStr: new Date().toISOString().split('T')[0] };
-          setIdeas(prev => [idea, ...prev]);
-          showToast("アイデアを記録しました。");
-        }
-        setNewIdea({ type: 'my_idea', content: '' });
-      };
-
-      const handleEdit = (idea) => {
-        setNewIdea({ type: idea.type, content: idea.content });
-        setEditingId(idea.id);
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      };
-
-      const handleDeleteIdea = (id) => {
-        if(window.confirm("このアイデアを削除しますか？")) { 
-          setIdeas(prev => prev.filter(i => i.id !== id)); 
-          if (editingId === id) {
-            setEditingId(null);
-            setNewIdea({ type: 'my_idea', content: '' });
-          }
-          showToast("アイデアを削除しました。");
-        }
-      };
-
-      const sortedIdeas = [...ideas].sort((a, b) => {
-        if (sortBy === 'date_desc') return b.createdAt - a.createdAt;
-        if (sortBy === 'date_asc') return a.createdAt - b.createdAt;
-        if (sortBy === 'type') {
-          if (a.type === b.type) return b.createdAt - a.createdAt;
-          return a.type.localeCompare(b.type);
-        }
-        return 0;
-      });
-
-      return (
-        <div className="max-w-4xl mx-auto animate-in fade-in duration-300">
-          <header className="mb-8 flex justify-between items-end flex-wrap gap-4">
-            <div>
-              <h2 className="text-2xl font-bold text-slate-800">アイデア・学び</h2>
-              <p className="text-slate-500 mt-2">本や動画からの学び、思いついたアイデア、使えそうないい言葉をストックします。</p>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-bold text-slate-600">並び替え:</span>
-              <select className="p-2 bg-white border border-slate-200 rounded-lg text-sm font-bold text-slate-700 focus:ring-2 focus:ring-blue-500 outline-none shadow-sm" value={sortBy} onChange={e => setSortBy(e.target.value)}>
-                <option value="date_desc">登録が新しい順</option><option value="date_asc">登録が古い順</option><option value="type">内容（カテゴリ）順</option>
-              </select>
-            </div>
-          </header>
-          <div className={`bg-white p-6 rounded-2xl shadow-sm border mb-8 transition-colors ${editingId ? 'border-blue-400 ring-2 ring-blue-50' : 'border-slate-200'}`}>
-            <h3 className="text-lg font-bold text-slate-700 mb-4 flex items-center gap-2">
-              <Icon name={editingId ? "Edit3" : "Lightbulb"} size={20} className="text-amber-500" /> 
-              {editingId ? "アイデアを編集" : "新しいアイデアをストック"}
-            </h3>
-            <form onSubmit={handleSaveIdea} className="space-y-4">
-              <div>
-                <label className="block text-sm font-bold text-slate-600 mb-2">種類</label>
-                <div className="flex flex-wrap gap-3">
-                  {Object.entries(IDEA_TYPES).map(([k, v]) => (
-                    <label key={k} className={`cursor-pointer px-4 py-2 rounded-xl border ${newIdea.type === k ? 'border-blue-500 bg-blue-50 shadow-sm ring-1 ring-blue-200' : 'border-slate-200 bg-white hover:bg-slate-50'} transition-all flex items-center gap-2 text-sm font-medium`}>
-                      <input type="radio" name="idea_type" value={k} checked={newIdea.type === k} onChange={e => setNewIdea({...newIdea, type: e.target.value})} className="hidden" />
-                      <span className={`w-3 h-3 rounded-full ${v.color.split(' ')[0]}`}></span>{v.label}
-                    </label>
-                  ))}
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-bold text-slate-600 mb-1">内容</label>
-                <textarea required placeholder="思いついたことや、メモしておきたい言葉を入力..." className="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 min-h-[120px]" value={newIdea.content} onChange={e => setNewIdea({...newIdea, content: e.target.value})} />
-              </div>
-              <div className="flex justify-end gap-2">
-                {editingId && (
-                  <button type="button" onClick={() => { setEditingId(null); setNewIdea({ type: 'my_idea', content: '' }); }} className="flex items-center gap-2 px-4 py-3 bg-slate-100 text-slate-600 rounded-xl font-bold text-sm hover:bg-slate-200"><Icon name="X" size={18} /> キャンセル</button>
-                )}
-                <button type="submit" className="flex items-center gap-2 px-6 py-3 bg-slate-800 text-white rounded-xl font-bold text-sm hover:bg-slate-700 shadow-sm"><Icon name="Save" size={18} /> {editingId ? "更新する" : "アイデアを保存"}</button>
-              </div>
-            </form>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {sortedIdeas.length > 0 ? sortedIdeas.map(idea => {
-              const typeInfo = IDEA_TYPES[idea.type] || IDEA_TYPES.others;
-              return (
-                <div key={idea.id} className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex flex-col justify-between hover:shadow-md transition-shadow relative group">
-                  <div className="absolute top-4 right-4 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button onClick={() => handleEdit(idea)} className="text-slate-400 hover:text-blue-600 bg-white rounded-full p-1.5 shadow-sm border border-slate-100"><Icon name="Edit3" size={16} /></button>
-                    <button onClick={() => handleDeleteIdea(idea.id)} className="text-slate-400 hover:text-red-500 bg-white rounded-full p-1.5 shadow-sm border border-slate-100"><Icon name="Trash2" size={16} /></button>
-                  </div>
-                  <div className="mb-3">
-                    <div className="flex items-center justify-between mb-3 pr-16"><span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold border ${typeInfo.color}`}>{typeInfo.label}</span><span className="text-xs text-slate-400 font-bold bg-slate-100 px-2 py-0.5 rounded">{idea.dateStr}</span></div>
-                    <p className="whitespace-pre-wrap text-slate-700 text-sm leading-relaxed">{idea.content}</p>
-                  </div>
-                </div>
-              );
-            }) : (
-              <div className="col-span-full text-center py-12 bg-white rounded-2xl border border-dashed border-slate-200">
-                <Icon name="Lightbulb" size={48} className="mx-auto text-slate-300 mb-4" />
-                <p className="text-slate-500">まだアイデアがありません。</p>
-              </div>
-            )}
-          </div>
-        </div>
-      );
-    }
-
-    function TodosView({ todos, setTodos, showToast }) {
-      const [newTodo, setNewTodo] = useState({ title: '', detail: '', date: new Date().toISOString().split('T')[0], isImportant: false });
-      const [editingId, setEditingId] = useState(null);
-
-      const handleSaveTodo = (e) => {
-        e.preventDefault();
-        if (!newTodo.title.trim()) return;
-        
-        if (editingId) {
-          setTodos(prev => prev.map(t => t.id === editingId ? { ...t, ...newTodo } : t));
-          setEditingId(null);
-          showToast("タスクを更新しました。");
-        } else {
-          const todo = { ...newTodo, id: Date.now(), createdAt: Date.now(), isCompleted: false };
-          setTodos(prev => [todo, ...prev]);
-          showToast("タスクを追加しました。");
-        }
-        setNewTodo({ title: '', detail: '', date: new Date().toISOString().split('T')[0], isImportant: false });
-      };
-
-      const handleEdit = (todo) => {
-        setNewTodo({ title: todo.title, detail: todo.detail || '', date: todo.date, isImportant: todo.isImportant });
-        setEditingId(todo.id);
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      };
-
-      const handleToggleComplete = (id) => { setTodos(prev => prev.map(t => t.id === id ? { ...t, isCompleted: !t.isCompleted } : t)); };
-      const handleToggleImportant = (id) => { setTodos(prev => prev.map(t => t.id === id ? { ...t, isImportant: !t.isImportant } : t)); };
-      
-      const handleDeleteTodo = (id) => { 
-        if(window.confirm("このタスクを削除しますか？")) { 
-          setTodos(prev => prev.filter(t => t.id !== id)); 
-          if (editingId === id) {
-            setEditingId(null);
-            setNewTodo({ title: '', detail: '', date: new Date().toISOString().split('T')[0], isImportant: false });
-          }
-        } 
-      };
-
-      const activeTodos = todos.filter(t => !t.isCompleted);
-      const completedTodos = todos.filter(t => t.isCompleted);
-
-      activeTodos.sort((a, b) => {
-        if (a.isImportant && !b.isImportant) return -1;
-        if (!a.isImportant && b.isImportant) return 1;
-        if (a.date > b.date) return -1;
-        if (a.date < b.date) return 1;
-        return b.createdAt - a.createdAt;
-      });
-      completedTodos.sort((a, b) => b.createdAt - a.createdAt);
-
-      return (
-        <div className="max-w-4xl mx-auto animate-in fade-in duration-300">
-          <header className="mb-8">
-            <h2 className="text-2xl font-bold text-slate-800">ToDoリスト</h2>
-            <p className="text-slate-500 mt-2">タスクを管理します。「重要☆」にチェックを入れたタスクや、日付が新しいものが自動的に上に表示されます。</p>
-          </header>
-          <div className={`bg-white p-6 rounded-2xl shadow-sm border mb-8 transition-colors ${editingId ? 'border-blue-400 ring-2 ring-blue-50' : 'border-slate-200'}`}>
-            {editingId && <h3 className="text-lg font-bold text-slate-700 mb-4 flex items-center gap-2"><Icon name="Edit3" size={20} className="text-blue-600" /> タスクを編集</h3>}
-            <form onSubmit={handleSaveTodo} className="space-y-4">
-              <div className="flex flex-wrap gap-4">
-                <div className="flex-[2] min-w-[200px]">
-                  <label className="block text-xs font-bold text-slate-500 mb-1">タスク名</label>
-                  <input type="text" required placeholder="タスクのタイトル" className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500" value={newTodo.title} onChange={e => setNewTodo({...newTodo, title: e.target.value})} />
-                </div>
-                <div className="flex-1 min-w-[120px]">
-                  <label className="block text-xs font-bold text-slate-500 mb-1">日付</label>
-                  <input type="date" required className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500" value={newTodo.date} onChange={e => setNewTodo({...newTodo, date: e.target.value})} />
-                </div>
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-slate-500 mb-1">詳細（任意）</label>
-                <textarea placeholder="タスクの詳細メモ..." className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 min-h-[60px] resize-y" value={newTodo.detail} onChange={e => setNewTodo({...newTodo, detail: e.target.value})} />
-              </div>
-              <div className="flex justify-between items-center mt-2 border-t border-slate-100 pt-4">
-                <label className="flex items-center gap-2 cursor-pointer p-2 hover:bg-slate-50 rounded-lg transition-colors border border-transparent hover:border-slate-200 select-none">
-                  <div className={`w-6 h-6 flex items-center justify-center rounded-md border ${newTodo.isImportant ? 'bg-amber-100 border-amber-300 text-amber-500' : 'bg-slate-50 border-slate-300 text-slate-300'}`}><Icon name="Star" size={14} className={newTodo.isImportant ? 'fill-current' : ''} /></div>
-                  <input type="checkbox" className="hidden" checked={newTodo.isImportant} onChange={e => setNewTodo({...newTodo, isImportant: e.target.checked})} />
-                  <span className={`text-sm font-bold ${newTodo.isImportant ? 'text-amber-600' : 'text-slate-600'}`}>重要☆</span>
-                </label>
-                <div className="flex gap-2">
-                  {editingId && (
-                    <button type="button" onClick={() => { setEditingId(null); setNewTodo({ title: '', detail: '', date: new Date().toISOString().split('T')[0], isImportant: false }); }} className="flex items-center gap-2 px-4 py-2.5 bg-slate-100 text-slate-600 rounded-xl font-bold text-sm hover:bg-slate-200"><Icon name="X" size={18} /> キャンセル</button>
-                  )}
-                  <button type="submit" className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 text-white rounded-xl font-bold text-sm hover:bg-blue-700 shadow-sm transition-all"><Icon name={editingId ? "Save" : "Plus"} size={18} /> {editingId ? "更新する" : "タスクを追加"}</button>
-                </div>
-              </div>
-            </form>
-          </div>
-          <div className="space-y-4 mb-12">
-            <h3 className="text-lg font-bold text-slate-700 flex items-center gap-2 border-b-2 border-slate-100 pb-2">未完了のタスク <span className="bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full text-xs">{activeTodos.length}</span></h3>
-            {activeTodos.length > 0 ? activeTodos.map(todo => (
-              <div key={todo.id} className={`bg-white p-4 rounded-xl border ${todo.isImportant ? 'border-amber-300 shadow-sm ring-2 ring-amber-100/50' : 'border-slate-200 hover:shadow-md'} flex gap-4 items-start group transition-all`}>
-                <button onClick={() => handleToggleComplete(todo.id)} className="mt-1 flex-shrink-0 w-6 h-6 rounded border-2 border-slate-300 hover:border-emerald-500 hover:bg-emerald-50 flex items-center justify-center text-transparent hover:text-emerald-500 transition-colors bg-slate-50"><Icon name="Check" size={14} /></button>
-                <div className="flex-1">
-                  <div className="flex justify-between items-start gap-4">
-                    <div className="flex items-center gap-2">
-                      <button onClick={() => handleToggleImportant(todo.id)} className={`${todo.isImportant ? 'text-amber-400 hover:text-amber-500' : 'text-slate-300 hover:text-amber-300'} transition-colors`}><Icon name="Star" size={18} className={todo.isImportant ? 'fill-current' : ''} /></button>
-                      <h4 className={`font-bold text-base ${todo.isImportant ? 'text-amber-900' : 'text-slate-800'}`}>{todo.title}</h4>
-                    </div>
-                    <span className="text-xs font-bold text-slate-500 bg-slate-100 px-2 py-1 rounded border border-slate-200 whitespace-nowrap">{todo.date}</span>
-                  </div>
-                  {todo.detail && <p className="mt-2 text-sm text-slate-600 bg-slate-50 p-3 rounded-lg border border-slate-100">{todo.detail}</p>}
-                </div>
-                <div className="flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <button onClick={() => handleEdit(todo)} className="text-slate-300 hover:text-blue-500 bg-white rounded-full p-1 border border-transparent hover:border-blue-100 hover:bg-blue-50"><Icon name="Edit3" size={18} /></button>
-                  <button onClick={() => handleDeleteTodo(todo.id)} className="text-slate-300 hover:text-red-500 bg-white rounded-full p-1 border border-transparent hover:border-red-100 hover:bg-red-50"><Icon name="Trash2" size={18} /></button>
-                </div>
-              </div>
-            )) : (
-              <div className="text-center py-10 bg-white rounded-xl border border-dashed border-slate-200">
-                <Icon name="CheckSquare" size={40} className="mx-auto text-slate-300 mb-3" />
-                <p className="text-slate-500 font-medium">未完了のタスクはありません！</p>
-              </div>
-            )}
-          </div>
-          {completedTodos.length > 0 && (
-            <div className="space-y-4">
-              <h3 className="text-lg font-bold text-slate-500 flex items-center gap-2 border-b-2 border-slate-100 pb-2">完了済みフォルダ <span className="bg-slate-100 text-slate-400 px-2 py-0.5 rounded-full text-xs">{completedTodos.length}</span></h3>
-              <div className="grid grid-cols-1 gap-3 opacity-70 hover:opacity-100 transition-opacity">
-                {completedTodos.map(todo => (
-                  <div key={todo.id} className="bg-slate-50 p-3 rounded-xl border border-slate-200 flex gap-3 items-center group">
-                    <button onClick={() => handleToggleComplete(todo.id)} className="flex-shrink-0 w-6 h-6 rounded bg-emerald-500 text-white flex items-center justify-center hover:bg-emerald-600 transition-colors shadow-sm"><Icon name="Check" size={14} /></button>
-                    <div className="flex-1 flex justify-between items-center gap-4 pr-8">
-                      <h4 className="font-bold text-slate-500 line-through text-sm truncate">{todo.title}</h4>
-                      <span className="text-[10px] font-bold text-slate-400 bg-white border border-slate-200 px-1.5 py-0.5 rounded whitespace-nowrap">{todo.date}</span>
-                    </div>
-                    <button onClick={() => handleDeleteTodo(todo.id)} className="text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"><Icon name="Trash2" size={16} /></button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-      );
-    }
-
-    function EventForm({ onSave, initialData, isEditing, onCancel }) {
-      const [event, setEvent] = useState({ title: '', date: new Date().toISOString().split('T')[0], content: '' });
-
-      useEffect(() => {
-        if (initialData) setEvent(initialData);
-        else setEvent({ title: '', date: new Date().toISOString().split('T')[0], content: '' });
-      }, [initialData]);
-
-      const handleSubmit = (e) => {
-        e.preventDefault();
-        if (!event.title.trim() || !event.content.trim()) return;
-        onSave(event);
-      };
-
-      return (
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="flex gap-4">
-            <div className="flex-1">
-              <label className="block text-sm font-bold text-slate-600 mb-1">出来事のタイトル</label>
-              <input type="text" required className="w-full p-3 bg-slate-50 border rounded-xl" value={event.title} onChange={e => setEvent({...event, title: e.target.value})} />
-            </div>
-            <div className="w-48">
-              <label className="block text-sm font-bold text-slate-600 mb-1">日付</label>
-              <input type="date" required className="w-full p-3 bg-slate-50 border rounded-xl" value={event.date} onChange={e => setEvent({...event, date: e.target.value})} />
-            </div>
-          </div>
-          <div>
-            <label className="block text-sm font-bold text-slate-600 mb-1">振り返り・所感</label>
-            <textarea required className="w-full p-4 bg-slate-50 border rounded-xl min-h-[120px]" value={event.content} onChange={e => setEvent({...event, content: e.target.value})} />
-          </div>
-          <div className="flex justify-end gap-2">
-            {isEditing && (
-              <button type="button" onClick={onCancel} className="flex items-center gap-2 px-4 py-3 bg-slate-100 text-slate-600 rounded-xl font-bold text-sm hover:bg-slate-200"><Icon name="X" size={18} /> キャンセル</button>
-            )}
-            <button type="submit" className="flex items-center gap-2 px-6 py-3 bg-slate-800 text-white rounded-xl font-bold text-sm hover:bg-slate-700 shadow-sm"><Icon name="Save" size={18} /> {isEditing ? "更新する" : "クラスの記録を保存"}</button>
-          </div>
-        </form>
-      );
-    }
-
-    function StudentDetail({ student, records, studentGrades, studentMockGrades, details, onUpdateDetails, onSaveRecord, onDeleteRecord, onBack, isPrintAllMode }) {
-      const [newRecord, setNewRecord] = useState({ date: new Date().toISOString().split('T')[0], type: 'observation', content: '' });
-      const [editingRecordId, setEditingRecordId] = useState(null);
-      const [isEditingDetails, setIsEditingDetails] = useState(false);
-      const [editDetails, setEditDetails] = useState({});
-
-      useEffect(() => { setEditDetails(details); }, [details]);
-
-      const handleSubmit = (e) => {
-        e.preventDefault();
-        if (!newRecord.content.trim()) return;
-        onSaveRecord(newRecord, editingRecordId);
-        setNewRecord({ date: new Date().toISOString().split('T')[0], type: 'observation', content: '' });
-        setEditingRecordId(null);
-      };
-
-      const handleEditRecord = (rec) => {
-        setNewRecord({ date: rec.date, type: rec.type, content: rec.content });
-        setEditingRecordId(rec.id);
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      };
-
-      const handleCancelEditRecord = () => {
-        setNewRecord({ date: new Date().toISOString().split('T')[0], type: 'observation', content: '' });
-        setEditingRecordId(null);
-      };
-
-      const handleSaveDetails = () => { onUpdateDetails(editDetails); setIsEditingDetails(false); };
-
-      const detailFields = [
-        { key: 'scholarship', label: '奨学生', type: 'select', options: ['', '奨A', '奨B', '奨C'] },
-        { key: 'club', label: '部活', type: 'text' },
-        { key: 'committee', label: 'クラスの係・委員会', type: 'text' },
-        { key: 'event_role', label: '行事の係', type: 'text' },
-        { key: 'course_kokugo', label: 'コース（国語）', type: 'select', options: ['', 'A', 'B', 'C'] },
-        { key: 'course_sugaku', label: 'コース（数学）', type: 'select', options: ['', 'A', 'B', 'C'] },
-        { key: 'course_eigo', label: 'コース（英語）', type: 'select', options: ['', 'A', 'B', 'C'] },
-        { key: 'strong_subject', label: '得意教科', type: 'text' },
-        { key: 'weak_subject', label: '苦手教科', type: 'text' },
-        { key: 'dream', label: '将来の夢', type: 'text' },
-        { key: 'university', label: '行きたい大学', type: 'text' },
-        { key: 'friends', label: '仲の良い友達', type: 'text' },
-        { key: 'good_points', label: '生徒の良いところ', type: 'text' },
-        { key: 'areas_to_improve', label: '改善したほうがいいところ', type: 'text' },
-        { key: 'others', label: 'その他', type: 'text' }
-      ];
-
-      return (
-        <div className="max-w-4xl mx-auto print:max-w-none">
-          {!isPrintAllMode && (
-            <div className="print:hidden mb-6 flex gap-4 justify-between items-center">
-              <button onClick={onBack} className="flex items-center text-slate-500 hover:text-blue-600 font-medium px-4 py-2 hover:bg-white rounded-lg transition-colors"><Icon name="ArrowLeft" size={18} className="mr-2" /> 生徒一覧に戻る</button>
-              <button onClick={() => window.print()} className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-xl font-medium text-sm shadow-sm hover:shadow-md transition-all"><Icon name="Printer" size={18} /> この記録をPDF出力</button>
-            </div>
-          )}
-
-          <div className="bg-white p-8 rounded-2xl shadow-sm border border-slate-200 mb-8 print:shadow-none print:border-b-2 print:border-slate-800 print:rounded-none print:px-0 print:py-2 print:mb-4">
-            <div className="flex justify-between mb-2 items-end">
-              <span className="text-lg font-bold text-slate-400 print:text-xs">出席番号 {student.number}番</span>
-              {isPrintAllMode && <span className="print:block hidden text-xs text-slate-500 font-bold border px-2 py-0.5 rounded">2年A組</span>}
-            </div>
-            <div>
-              <div className="text-slate-500 mb-1 print:text-[10px]">{student.kana}</div>
-              <h2 className="text-4xl font-extrabold text-slate-800 flex items-center gap-3">
-                {student.name}
-                {details.scholarship && <span className="text-sm font-bold px-2 py-1 rounded bg-amber-100 text-amber-700 border border-amber-200 print:text-[10px] print:px-1 print:py-0 print:border-slate-400 print:text-black print:bg-transparent">{details.scholarship}</span>}
-              </h2>
-            </div>
-          </div>
-
-          <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 mb-8 print:p-0 print:shadow-none print:border-none print:mb-4">
-            <div className="flex justify-between items-center border-b-2 border-slate-100 pb-3 mb-4 print:border-slate-300 print:pb-1 print:mb-2">
-              <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2"><Icon name="ClipboardList" size={20} className="text-indigo-600 print:text-black print:hidden" /> 生徒詳細情報</h3>
-              {!isPrintAllMode && !isEditingDetails && (
-                <button onClick={() => setIsEditingDetails(true)} className="print:hidden flex items-center gap-1 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-sm font-bold transition-colors"><Icon name="Edit3" size={16} /> 編集</button>
-              )}
-              {!isPrintAllMode && isEditingDetails && (
-                <button onClick={handleSaveDetails} className="print:hidden flex items-center gap-1 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-bold transition-colors shadow-sm"><Icon name="Check" size={16} /> 保存</button>
-              )}
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 print:gap-x-4 print:gap-y-1">
-              {detailFields.map(field => (
-                <div key={field.key} className="flex flex-col">
-                  <span className="text-xs font-bold text-slate-500 mb-1 print:mb-0 print:text-[8px]">{field.label}</span>
-                  {isEditingDetails ? (
-                    field.type === 'select' ? (
-                      <select className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none text-sm transition-all" value={editDetails[field.key] || ''} onChange={e => setEditDetails({...editDetails, [field.key]: e.target.value})}>
-                        {field.options.map(opt => <option key={opt} value={opt}>{opt || '未選択'}</option>)}
-                      </select>
-                    ) : (
-                      <input type="text" className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none text-sm transition-all" value={editDetails[field.key] || ''} onChange={e => setEditDetails({...editDetails, [field.key]: e.target.value})} placeholder="未入力" />
-                    )
-                  ) : (
-                    <span className="text-sm text-slate-800 font-medium py-1 border-b border-transparent bg-slate-50 px-3 rounded-md min-h-[28px] flex items-center print:bg-transparent print:px-1 print:border-b-slate-200">
-                      {details[field.key] || <span className="text-slate-300 font-normal">未入力</span>}
-                    </span>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 mb-8 print:p-0 print:shadow-none print:border-none print:mb-4">
-            <h3 className="text-lg font-bold text-slate-800 border-b-2 border-slate-100 pb-3 mb-4 flex items-center gap-2 print:border-slate-300 print:pb-1 print:mb-2">
-              <Icon name="FileSpreadsheet" size={20} className="text-blue-600 print:hidden" /> 定期考査 成績一覧
-            </h3>
-            <div className="overflow-x-auto mb-8 print:mb-4">
-              <table className="w-full text-sm text-left border-collapse"><thead className="bg-slate-50 text-slate-600 font-bold">
-                <tr><th className="p-3 border border-slate-200">考査名</th><th className="p-3 border border-slate-200 text-center">国語</th><th className="p-3 border border-slate-200 text-center">社会</th><th className="p-3 border border-slate-200 text-center">数学</th><th className="p-3 border border-slate-200 text-center">理科</th><th className="p-3 border border-slate-200 text-center">外国語</th><th className="p-3 border border-slate-200 text-center bg-blue-50/50 print:bg-transparent">総点</th><th className="p-3 border border-slate-200 text-center">平均</th><th className="p-3 border border-slate-200 text-center">学級席次</th><th className="p-3 border border-slate-200 text-center">学年席次</th></tr>
-              </thead><tbody>
-                {TEST_TERMS.map(term => {
-                  const g = studentGrades[term.id];
-                  return <tr key={term.id} className="hover:bg-slate-50"><td className="p-3 border border-slate-200">{term.name}</td><td className="p-3 border border-slate-200 text-center">{g?.kokugo||'-'}</td><td className="p-3 border border-slate-200 text-center">{g?.shakai||'-'}</td><td className="p-3 border border-slate-200 text-center">{g?.sugaku||'-'}</td><td className="p-3 border border-slate-200 text-center">{g?.rika||'-'}</td><td className="p-3 border border-slate-200 text-center">{g?.eigo||'-'}</td><td className="p-3 border border-slate-200 text-center font-bold bg-blue-50/30 print:bg-transparent">{g?.total||'-'}</td><td className="p-3 border border-slate-200 text-center">{g?.average||'-'}</td><td className="p-3 border border-slate-200 text-center">{g?.class_rank||'-'}</td><td className="p-3 border border-slate-200 text-center">{g?.grade_rank||'-'}</td></tr>
-                })}
-              </tbody></table>
-            </div>
-            <h3 className="text-lg font-bold text-slate-800 border-b-2 border-slate-100 pb-3 mb-4 flex items-center gap-2 print:border-slate-300 print:pb-1 print:mb-2">
-              <Icon name="LineChart" size={20} className="text-blue-600 print:hidden" /> 学力推移調査 成績一覧
-            </h3>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm text-left border-collapse"><thead className="bg-slate-50 text-slate-600 font-bold">
-                <tr><th className="p-3 border border-slate-200" rowSpan="2">模試名</th><th className="p-2 border border-slate-200 text-center bg-blue-50/50 print:bg-transparent" colSpan="2">国数英 総合</th><th className="p-2 border border-slate-200 text-center" colSpan="2">国語</th><th className="p-2 border border-slate-200 text-center" colSpan="2">数学</th><th className="p-2 border border-slate-200 text-center" colSpan="2">英語</th></tr>
-                <tr><th className="p-2 border border-slate-200 text-center text-xs bg-blue-50/50 print:bg-transparent">得点</th><th className="p-2 border border-slate-200 text-center text-xs bg-blue-50/50 print:bg-transparent print:text-black">偏差値</th><th className="p-2 border border-slate-200 text-center text-xs">得点</th><th className="p-2 border border-slate-200 text-center text-xs">偏差値</th><th className="p-2 border border-slate-200 text-center text-xs">得点</th><th className="p-2 border border-slate-200 text-center text-xs">偏差値</th><th className="p-2 border border-slate-200 text-center text-xs">得点</th><th className="p-2 border border-slate-200 text-center text-xs">偏差値</th></tr>
-              </thead><tbody>
-                {MOCK_EXAMS.map(mock => {
-                  const mg = studentMockGrades[mock.id];
-                  return <tr key={mock.id} className="hover:bg-slate-50"><td className="p-3 border border-slate-200">{mock.name}</td><td className="p-2 border border-slate-200 text-center font-bold bg-blue-50/30 print:bg-transparent">{mg?.total_score||'-'}</td><td className="p-2 border border-slate-200 text-center font-bold bg-blue-50/30 text-blue-700 print:text-black print:bg-transparent">{mg?.total_dev||'-'}</td><td className="p-2 border border-slate-200 text-center">{mg?.kokugo_score||'-'}</td><td className="p-2 border border-slate-200 text-center">{mg?.kokugo_dev||'-'}</td><td className="p-2 border border-slate-200 text-center">{mg?.sugaku_score||'-'}</td><td className="p-2 border border-slate-200 text-center">{mg?.sugaku_dev||'-'}</td><td className="p-2 border border-slate-200 text-center">{mg?.eigo_score||'-'}</td><td className="p-2 border border-slate-200 text-center">{mg?.eigo_dev||'-'}</td></tr>
-                })}
-              </tbody></table>
-            </div>
-          </div>
-
-          {!isPrintAllMode && (
-            <div className={`bg-white p-6 rounded-2xl shadow-sm border mb-8 transition-colors ${editingRecordId ? 'border-blue-400 ring-2 ring-blue-50' : 'border-slate-200'} print:hidden`}>
-              <h3 className="text-lg font-bold text-slate-700 mb-4 flex items-center gap-2">
-                <Icon name={editingRecordId ? "Edit3" : "Plus"} size={20} className="text-blue-600" /> 
-                {editingRecordId ? "記録を編集" : "新しい記録を追加"}
-              </h3>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="flex gap-4"><div className="flex-1"><label className="block text-sm font-bold text-slate-600 mb-1">日付</label><input type="date" required className="w-full p-3 bg-slate-50 border rounded-xl focus:ring-2 focus:ring-blue-500" value={newRecord.date} onChange={e => setNewRecord({...newRecord, date: e.target.value})} /></div><div className="flex-1"><label className="block text-sm font-bold text-slate-600 mb-1">種類</label><select className="w-full p-3 bg-slate-50 border rounded-xl focus:ring-2 focus:ring-blue-500" value={newRecord.type} onChange={e => setNewRecord({...newRecord, type: e.target.value})}>{Object.entries(RECORD_TYPES).map(([k,v]) => <option key={k} value={k}>{v.label}</option>)}</select></div></div>
-                <div><label className="block text-sm font-bold text-slate-600 mb-1">内容</label><textarea required className="w-full p-4 bg-slate-50 border rounded-xl min-h-[120px] focus:ring-2 focus:ring-blue-500" value={newRecord.content} onChange={e => setNewRecord({...newRecord, content: e.target.value})} /></div>
-                <div className="flex justify-end gap-2">
-                  {editingRecordId && (
-                    <button type="button" onClick={handleCancelEditRecord} className="flex items-center gap-2 px-4 py-3 bg-slate-100 text-slate-600 rounded-xl font-bold text-sm hover:bg-slate-200"><Icon name="X" size={18} /> キャンセル</button>
-                  )}
-                  <button type="submit" className="flex items-center gap-2 px-6 py-3 bg-slate-800 text-white rounded-xl font-bold text-sm hover:bg-slate-700 shadow-sm"><Icon name="Save" size={18} /> {editingRecordId ? "更新する" : "記録を保存"}</button>
-                </div>
-              </form>
-            </div>
-          )}
-
-          <div>
-            <h3 className="text-xl font-bold text-slate-800 border-b-2 border-slate-100 pb-3 mb-6 print:border-slate-300 print:pb-1 print:mb-2">これまでの記録</h3>
-            <div className="space-y-6 print:space-y-2">
-              {records.length > 0 ? records.map(record => {
-                const typeInfo = RECORD_TYPES[record.type];
-                return (
-                  <div key={record.id} className="md:flex gap-6 items-start">
-                    <div className="md:w-[100px] flex-shrink-0 pt-1 mb-2 md:mb-0"><div className="text-sm font-bold text-slate-500">{record.date}</div></div>
-                    <div className="flex-1 bg-white p-5 rounded-2xl shadow-sm border border-slate-200 print:shadow-none print:border-slate-300 print:rounded-lg relative group hover:shadow-md transition-shadow">
-                      <div className="absolute top-3 right-3 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity print:hidden">
-                        <button onClick={() => handleEditRecord(record)} className="text-slate-400 hover:text-blue-600 bg-slate-50 hover:bg-white rounded-full p-1.5 shadow-sm border border-slate-100"><Icon name="Edit3" size={16} /></button>
-                        <button onClick={() => onDeleteRecord(record.id)} className="text-slate-400 hover:text-red-500 bg-slate-50 hover:bg-white rounded-full p-1.5 shadow-sm border border-slate-100"><Icon name="Trash2" size={16} /></button>
-                      </div>
-                      <div className="flex items-center gap-2 mb-3 print:mb-1 pr-14"><span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border ${typeInfo.color} print:border-slate-400 print:text-black print:bg-transparent print:px-2 print:py-0.5`}><Icon name={typeInfo.icon} size={14} className="print:hidden" /> {typeInfo.label}</span></div>
-                      <p className="whitespace-pre-wrap text-slate-700 print:text-black leading-relaxed">{record.content}</p>
-                    </div>
-                  </div>
-                )
-              }) : <div className="text-center py-12 bg-white rounded-2xl border border-dashed print:hidden"><p className="text-slate-500">まだ記録はありません。</p></div>}
-            </div>
-          </div>
-        </div>
-      );
-    }
-
-    function NavItem({ icon, label, active, onClick }) {
-      return (
-        <button onClick={onClick} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-sm font-medium ${active ? 'bg-blue-50 text-blue-700 border border-blue-100' : 'text-slate-600 hover:bg-slate-50'}`}>
-          {icon} {label}
-        </button>
       );
     }
 
