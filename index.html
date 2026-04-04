@@ -35,10 +35,6 @@
 
   <script type="text/babel" data-type="module">
     const { useState, useEffect, useRef, useCallback } = React;
-    import { Users, Target, Printer, Calendar as CalIcon, ArrowLeft, MessageCircle, AlertTriangle, BookOpen, Phone, Plus, Save, ChevronRight, FileSpreadsheet, Database, ClipboardList, Edit3, Check, Download, Upload, LineChart, Cloud, UploadCloud as CloudUpload, DownloadCloud as CloudDownload, Settings, ChevronDown, Menu, Loader2, ArrowUpDown, ArrowUp, ArrowDown, RotateCcw, Lightbulb, CheckSquare, Star, Trash2, X, Heart } from 'https://esm.sh/lucide-react@0.344.0';
-    import { initializeApp, getApps, getApp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js';
-    import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
-    import { getFirestore, doc, setDoc, getDoc, onSnapshot } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
 
     // --- 超圧縮版アイコン群 ---
     const ICONS = {
@@ -175,8 +171,7 @@
             <h3 className="font-bold border-b pb-2 mb-4">これまでの記録</h3>
             <div className="space-y-4">
               {records.length > 0 ? records.map(r => {
-                const t = RECORD_TYPES[r.type];
-                return <div key={r.id} className="flex gap-4 group"><div className="w-24 shrink-0 text-sm text-slate-500 font-bold pt-2">{r.date}</div><div className="flex-1 bg-white p-4 rounded-xl border relative"><div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 print-hide flex gap-1"><button onClick={()=>{setNR({date:r.date,type:r.type,content:r.content});setERId(r.id);window.scrollTo(0,0)}} className="p-1 hover:text-blue-600"><Icon name="Edit3" size={16}/></button><button onClick={()=>onDeleteRecord(r.id)} className="p-1 hover:text-red-500"><Icon name="Trash2" size={16}/></button></div><span className={`inline-flex items-center gap-1 text-xs px-2 py-1 rounded font-bold ${t.color}`}><Icon name={t.icon} size={12} className="print-hide"/> {t.label}</span><p className="mt-2 whitespace-pre-wrap text-sm">{r.content}</p></div></div>
+                return <div key={r.id} className="flex gap-4 group"><div className="w-24 shrink-0 text-sm text-slate-500 font-bold pt-2">{r.date}</div><div className="flex-1 bg-white p-4 rounded-xl border relative"><div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 print-hide flex gap-1"><button onClick={()=>{setNR({date:r.date,type:r.type,content:r.content});setERId(r.id);window.scrollTo(0,0)}} className="p-1 hover:text-blue-600"><Icon name="Edit3" size={16}/></button><button onClick={()=>onDeleteRecord(r.id)} className="p-1 hover:text-red-500"><Icon name="Trash2" size={16}/></button></div><span className={`inline-flex items-center gap-1 text-xs px-2 py-1 rounded font-bold ${RECORD_TYPES[r.type].color}`}><Icon name={RECORD_TYPES[r.type].icon} size={12} className="print-hide"/> {RECORD_TYPES[r.type].label}</span><p className="mt-2 whitespace-pre-wrap text-sm">{r.content}</p></div></div>
               }) : <p className="text-slate-500 text-center py-8 print-hide">記録はありません。</p>}
             </div>
           </div>
@@ -184,7 +179,7 @@
       );
     };
 
-    const StudentDetailsView = ({ details, setDetails, students, showToast }) => {
+    function StudentDetailsView({ details, setDetails, students, showToast }) {
       const ref = useRef(null); const [s, sort] = useSort('number');
       const cols = [{k:'scholarship',l:'奨学生'},{k:'club',l:'部活'},{k:'committee',l:'係'},{k:'event_role',l:'行事'},{k:'strong_subject',l:'得意'},{k:'weak_subject',l:'苦手'},{k:'dream',l:'夢'},{k:'university',l:'志望校'}];
       const sorted = [...students].sort((a,b) => {
@@ -202,11 +197,24 @@
         lines.forEach(l => { const v=parseCSVLine(l); const st=students.find(x=>x.number===parseInt(v[0])); if(st){ nD[st.id]={scholarship:v[2],club:v[3],committee:v[4],event_role:v[5],strong_subject:v[6],weak_subject:v[7],dream:v[8],university:v[9]}; cnt++; } });
         setDetails(nD); e.target.value=null; showToast(`${cnt}名読込完了`);
       });
+
+      // --- リサイズ機能の追加 ---
+      const [colW, setColW] = useState({ scholarship:80, club:100, committee:100, event_role:100, strong_subject:100, weak_subject:100, dream:150, university:150 });
+      const resCol = useRef(null); const sX = useRef(0); const sW = useRef(0);
+      const startRes = (e, k) => { e.preventDefault(); e.stopPropagation(); resCol.current = k; sX.current = e.clientX; sW.current = e.target.parentElement.offsetWidth; const move = ev => setColW(p => ({...p, [resCol.current]: Math.max(30, sW.current + (ev.clientX - sX.current))})); const up = () => { resCol.current = null; document.removeEventListener('mousemove', move); document.removeEventListener('mouseup', up); }; document.addEventListener('mousemove', move); document.addEventListener('mouseup', up); };
+
       return (
         <div className="max-w-full mx-auto">
           <div className="flex justify-between items-end mb-6"><h2 className="text-2xl font-bold">生徒詳細情報管理</h2><div className="flex gap-2"><button onClick={dl} className="px-4 py-2 bg-white border rounded shadow-sm text-sm font-bold"><Icon name="Download" size={16} className="inline mr-1"/>CSV出力</button><input type="file" className="hidden" ref={ref} onChange={ul}/><button onClick={()=>ref.current?.click()} className="px-4 py-2 bg-blue-50 border-blue-200 text-blue-700 rounded shadow-sm text-sm font-bold"><Icon name="Upload" size={16} className="inline mr-1"/>CSV読込</button></div></div>
           <div className="bg-white rounded-xl shadow-sm border overflow-x-auto relative">
-            <table className="w-full text-sm text-left whitespace-nowrap"><thead className="bg-slate-50 border-b"><tr><th className="p-3 w-12 sticky left-0 z-10 bg-slate-50 cursor-pointer" onClick={()=>sort('number')}>番<SortIcon s={s} k="number"/></th><th className="p-3 w-32 sticky left-[48px] z-10 bg-slate-50 cursor-pointer" onClick={()=>sort('name')}>氏名<SortIcon s={s} k="name"/></th>{cols.map(c=><th key={c.k} className="p-3 cursor-pointer hover:bg-slate-100" onClick={()=>sort(c.k)}>{c.l}<SortIcon s={s} k={c.k}/></th>)}</tr></thead><tbody className="divide-y">{sorted.map(st=>{ const d=details[st.id]||{}; return <tr key={st.id} className="hover:bg-slate-50"><td className="p-3 sticky left-0 z-10 bg-white">{st.number}</td><td className="p-3 font-bold sticky left-[48px] z-10 bg-white">{st.name}</td>{cols.map(c=><td key={c.k} className={`p-3 truncate max-w-[150px] ${c.k==='scholarship'?'text-amber-600 font-bold':''}`}>{d[c.k]||'-'}</td>)}</tr>})}</tbody></table>
+            <table className="w-full text-sm text-left whitespace-nowrap"><thead className="bg-slate-50 border-b"><tr>
+              <th className="p-3 w-12 sticky left-0 z-10 bg-slate-50 cursor-pointer" onClick={()=>sort('number')}>番<SortIcon s={s} k="number"/></th>
+              <th className="p-3 w-32 sticky left-[48px] z-10 bg-slate-50 cursor-pointer" onClick={()=>sort('name')}>氏名<SortIcon s={s} k="name"/></th>
+              {cols.map(c=><th key={c.k} style={{minWidth:colW[c.k], maxWidth:colW[c.k]}} className="p-3 cursor-pointer hover:bg-slate-100 relative group" onClick={()=>sort(c.k)}>
+                <div className="truncate pr-2">{c.l}<SortIcon s={s} k={c.k}/></div>
+                <div onMouseDown={e=>startRes(e, c.k)} onClick={e=>e.stopPropagation()} className="absolute right-0 top-0 bottom-0 w-2 cursor-col-resize hover:bg-blue-500 z-20 opacity-0 group-hover:opacity-100 transition-opacity" />
+              </th>)}
+            </tr></thead><tbody className="divide-y">{sorted.map(st=>{ const d=details[st.id]||{}; return <tr key={st.id} className="hover:bg-slate-50"><td className="p-3 sticky left-0 z-10 bg-white">{st.number}</td><td className="p-3 font-bold sticky left-[48px] z-10 bg-white">{st.name}</td>{cols.map(c=><td key={c.k} style={{minWidth:colW[c.k], maxWidth:colW[c.k]}} className={`p-3 truncate ${c.k==='scholarship'?'text-amber-600 font-bold':''}`}>{d[c.k]||'-'}</td>)}</tr>})}</tbody></table>
           </div>
         </div>
       );
@@ -226,7 +234,7 @@
       };
       const ul = e => impCSV(e.target.files[0], lines => {
         const nG={...(grades[sel]||{})}; let cnt=0;
-        lines.forEach(v=>{ const st=students.find(x=>x.number===parseInt(v.split(',')[0])); if(st){ const a=v.split(','); nG[st.id]={kokugo:a[2],shakai:a[3],sugaku:a[4],rika:a[5],eigo:a[6],total:a[7],average:a[8],class_rank:a[9],grade_rank:a[10]}; cnt++; }});
+        lines.forEach(v=>{ const st=students.find(x=>x.number===parseInt(v[0])); if(st){ nG[st.id]={kokugo:v[2],shakai:v[3],sugaku:v[4],rika:v[5],eigo:v[6],total:v[7],average:v[8],class_rank:v[9],grade_rank:v[10]}; cnt++; }});
         setGrades(p=>({...p,[sel]:nG})); e.target.value=null; showToast(`${cnt}名読込`);
       });
       const thC = "p-3 cursor-pointer hover:bg-slate-100 text-center";
@@ -259,7 +267,7 @@
       };
       const ul = e => impCSV(e.target.files[0], lines => {
         const nG={...(mockGrades[sel]||{})}; let cnt=0;
-        lines.forEach(v=>{ const st=students.find(x=>x.number===parseInt(v.split(',')[0])); if(st){ const a=v.split(','); nG[st.id]={total_score:a[2],total_dev:a[3],kokugo_score:a[4],kokugo_dev:a[5],sugaku_score:a[6],sugaku_dev:a[7],eigo_score:a[8],eigo_dev:a[9]}; cnt++; }});
+        lines.forEach(v=>{ const st=students.find(x=>x.number===parseInt(v[0])); if(st){ nG[st.id]={total_score:v[2],total_dev:v[3],kokugo_score:v[4],kokugo_dev:v[5],sugaku_score:v[6],sugaku_dev:v[7],eigo_score:v[8],eigo_dev:v[9]}; cnt++; }});
         setMockGrades(p=>({...p,[sel]:nG})); e.target.value=null; showToast(`${cnt}名読込`);
       });
       const thC = "p-2 cursor-pointer hover:bg-slate-100 text-center text-xs";
@@ -536,7 +544,7 @@
               <div>
                 <h1 className="text-xl font-bold text-blue-700 flex items-center gap-2"><Icon name="Users" size={24} className="text-blue-600"/>中2A クラスノート</h1>
                 <div className="flex items-center gap-2 mt-2">
-                  <span className="text-[10px] font-mono bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded border">v1.9.4</span>
+                  <span className="text-[10px] font-mono bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded border">v1.9.5</span>
                   {isCloudReady ? (saveStatus === 'saving' ? <span className="flex items-center gap-1 text-[10px] text-amber-600 font-bold bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200"><Icon name="Loader2" size={10} className="animate-spin"/> 保存中</span> : <span className="flex items-center gap-1 text-[10px] text-emerald-600 font-bold bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-100">自動同期ON</span>) : <span className="text-[10px] text-slate-400 font-bold bg-slate-50 px-1.5 py-0.5 rounded border">同期OFF</span>}
                 </div>
               </div>
@@ -608,7 +616,7 @@
                   })}</div>
                 </div>
               )}
-              {activeTab === 'students' && selectedStudentId && <StudentDetail student={INITIAL_STUDENTS.find(s=>s.id===selectedStudentId)} records={records[selectedStudentId]||[]} studentGrades={TEST_TERMS.reduce((a,t)=>({...a,[t.id]:grades[t.id]?.[selectedStudentId]||null}),{})} studentMockGrades={MOCK_EXAMS.reduce((a,m)=>({...a,[m.id]:mockGrades[m.id]?.[selectedStudentId]||null}),{})} details={studentDetails[selectedStudentId]||{}} onUpdateDetails={d=>{setStudentDetails(p=>({...p,[selectedStudentId]:d}));showToast("更新しました");}} onSaveRecord={(r,id)=>{setRecords(p=>({...p,[selectedStudentId]:(id?(p[selectedStudentId]||[]).map(x=>x.id===id?{...r,id}:x):[{...r,id:Date.now()},...(p[selectedStudentId]||[])]).sort((a,b)=>new Date(b.date)-new Date(a.date))}));showToast("保存完了");}} onDeleteRecord={id=>confirmDialog("削除しますか？", () => {setRecords(p=>({...p,[selectedStudentId]:(p[selectedStudentId]||[]).filter(x=>x.id!==id)}));showToast("削除済");})} onBack={()=>setSelectedStudentId(null)} isPrint={false} />}
+              {activeTab === 'students' && selectedStudentId && <StudentDetail student={INITIAL_STUDENTS.find(s=>s.id===selectedStudentId)} records={records[selectedStudentId]||[]} studentGrades={TEST_TERMS.reduce((a,t)=>({...a,[t.id]:grades[t.id]?.[selectedStudentId]||null}),{})} studentMockGrades={MOCK_EXAMS.reduce((a,m)=>({...a,[m.id]:mockGrades[m.id]?.[selectedStudentId]||null}),{})} details={studentDetails[selectedStudentId]||{}} onUpdateDetails={d=>{setStudentDetails(p=>({...p,[selectedStudentId]:d}));showToast("更新しました");}} onSaveRecord={(r,id)=>{setRecords(p=>({...p,[selectedStudentId]:(id?(p[selectedStudentId]||[]).map(x=>x.id===id?{...r,id}:x):[{...r,id:Date.now()},...(p[selectedStudentId]||[])]).sort((a,b)=>new Date(b.date)-new Date(a.date))}));showToast("保存完了");}} onDeleteRecord={id=>confirmDialog("削除しますか？", () => {setRecords(p=>({...p,[selectedStudentId]:(p[selectedStudentId]||[]).filter(x=>x.id!==id)}));showToast("削除済");})} onBack={()=>setSelectedStudentId(null)} isPrint={false} confirmDialog={confirmDialog} />}
               {activeTab === 'student_details' && <StudentDetailsView details={studentDetails} setDetails={setStudentDetails} students={INITIAL_STUDENTS} showToast={showToast} />}
               {activeTab === 'grades' && <GradesView grades={grades} setGrades={setGrades} students={INITIAL_STUDENTS} terms={TEST_TERMS} showToast={showToast} />}
               {activeTab === 'mock_grades' && <MockGradesView mockGrades={mockGrades} setMockGrades={setMockGrades} students={INITIAL_STUDENTS} mocks={MOCK_EXAMS} showToast={showToast} />}
