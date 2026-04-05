@@ -163,7 +163,7 @@
       const [eRId, setERId] = useState(null); const [isE, setIsE] = useState(false); const [eD, setED] = useState({});
       useEffect(() => setED(details), [details]);
       const saveR = (e) => { e.preventDefault(); if(!nR.content) return; onSaveRecord(nR, eRId); setNR({date:new Date().toISOString().split('T')[0], type:'observation', content:''}); setERId(null); };
-      const fields = [ { k:'scholarship',l:'奨学生',o:['','奨A','奨B','奨C'] }, { k:'club',l:'部活' }, { k:'committee',l:'係・委員' }, { k:'event_role',l:'行事係' }, { k:'strong_subject',l:'得意' }, { k:'weak_subject',l:'苦手' }, { k:'dream',l:'夢' }, { k:'university',l:'志望校' }, { k:'friends',l:'友達' }, { k:'others',l:'他' } ];
+      const fields = [ { k:'scholarship',l:'奨学生',o:['','奨A','奨B','奨C'] }, { k:'elementary_school', l:'小学校' }, { k:'club',l:'部活' }, { k:'committee',l:'係・委員' }, { k:'event_role',l:'行事係' }, { k:'strong_subject',l:'得意' }, { k:'weak_subject',l:'苦手' }, { k:'dream',l:'夢' }, { k:'university',l:'志望校' }, { k:'friends',l:'友達' }, { k:'others',l:'他' } ];
       return (
         <div className="max-w-4xl mx-auto print:max-w-none">
           {!isPrint && <div className="print-hide mb-6 flex gap-4 justify-between"><button onClick={onBack} className="flex items-center text-slate-500 hover:bg-white px-4 py-2 rounded-lg"><Icon name="ArrowLeft" size={18} className="mr-2"/> 生徒一覧</button><button onClick={()=>window.print()} className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-bold"><Icon name="Printer" size={18}/> PDF出力</button></div>}
@@ -202,11 +202,24 @@
           </div>
         </div>
       );
-    }
+    };
 
     function StudentDetailsView({ details, setDetails, students, showToast }) {
       const ref = useRef(null); const [s, sort] = useSort('number');
-      const cols = [{k:'scholarship',l:'奨学生'},{k:'club',l:'部活'},{k:'committee',l:'係'},{k:'event_role',l:'行事'},{k:'strong_subject',l:'得意'},{k:'weak_subject',l:'苦手'},{k:'dream',l:'夢'},{k:'university',l:'志望校'}];
+      const [editingId, setEditingId] = useState(null);
+      const [editData, setEditData] = useState({});
+
+      const cols = [
+        {k:'scholarship',l:'奨学生',o:['','奨A','奨B','奨C']},
+        {k:'elementary_school', l:'小学校'},
+        {k:'club',l:'部活'},
+        {k:'committee',l:'係'},
+        {k:'event_role',l:'行事'},
+        {k:'strong_subject',l:'得意'},
+        {k:'weak_subject',l:'苦手'},
+        {k:'dream',l:'夢'},
+        {k:'university',l:'志望校'}
+      ];
       const sorted = [...students].sort((a,b) => {
         if(s.k==='number') return s.d==='asc'?a.number-b.number:b.number-a.number;
         if(s.k==='name') return s.d==='asc'?a.kana.localeCompare(b.kana,'ja'):b.kana.localeCompare(a.kana,'ja');
@@ -219,11 +232,18 @@
       };
       const ul = e => impCSV(e.target.files[0], lines => {
         const nD = {...details}; let cnt=0;
-        lines.forEach(l => { const v=parseCSVLine(l); const st=students.find(x=>x.number===parseInt(v[0])); if(st){ nD[st.id]={scholarship:v[2],club:v[3],committee:v[4],event_role:v[5],strong_subject:v[6],weak_subject:v[7],dream:v[8],university:v[9]}; cnt++; } });
+        lines.forEach(l => { 
+          const v=parseCSVLine(l); 
+          const st=students.find(x=>x.number===parseInt(v[0])); 
+          if(st){ 
+            nD[st.id]={scholarship:v[2], elementary_school:v[3], club:v[4], committee:v[5], event_role:v[6], strong_subject:v[7], weak_subject:v[8], dream:v[9], university:v[10]}; 
+            cnt++; 
+          } 
+        });
         setDetails(nD); e.target.value=null; showToast(`${cnt}名読込完了`);
       });
 
-      const [colW, setColW] = useState({ scholarship:80, club:100, committee:100, event_role:100, strong_subject:100, weak_subject:100, dream:150, university:150 });
+      const [colW, setColW] = useState({ scholarship:80, elementary_school:120, club:100, committee:100, event_role:100, strong_subject:100, weak_subject:100, dream:150, university:150 });
       const resCol = useRef(null); const sX = useRef(0);
       const startRes = (e, k) => { e.preventDefault(); e.stopPropagation(); resCol.current = k; sX.current = e.clientX; const sW = colW[k] || 100; const move = ev => setColW(p => ({...p, [resCol.current]: Math.max(30, sW + (ev.clientX - sX.current))})); const up = () => { resCol.current = null; document.removeEventListener('mousemove', move); document.removeEventListener('mouseup', up); }; document.addEventListener('mousemove', move); document.addEventListener('mouseup', up); };
 
@@ -238,7 +258,32 @@
                 <div className="truncate pr-2">{c.l}<SortIcon s={s} k={c.k}/></div>
                 <div onMouseDown={e=>startRes(e, c.k)} onClick={e=>e.stopPropagation()} className="absolute right-0 top-0 bottom-0 w-2 cursor-col-resize hover:bg-blue-500 z-20 opacity-0 group-hover:opacity-100 transition-opacity" />
               </th>)}
-            </tr></thead><tbody className="divide-y">{sorted.map(st=>{ const d=details[st.id]||{}; return <tr key={st.id} className="hover:bg-slate-50"><td className="p-3 sticky left-0 z-10 bg-white">{st.number}</td><td className="p-3 font-bold sticky left-[48px] z-10 bg-white">{st.name}</td>{cols.map(c=><td key={c.k} style={{minWidth:colW[c.k], maxWidth:colW[c.k]}} className={`p-3 truncate ${c.k==='scholarship'?'text-amber-600 font-bold':''}`}>{d[c.k]||'-'}</td>)}</tr>})}</tbody></table>
+              <th className="p-3 w-16 sticky right-0 z-10 bg-slate-50 border-l text-center">操作</th>
+            </tr></thead><tbody className="divide-y">{sorted.map(st=>{ 
+              const isEditing = editingId === st.id;
+              const d = isEditing ? editData : (details[st.id]||{}); 
+              return <tr key={st.id} className="hover:bg-slate-50 group">
+                <td className="p-3 sticky left-0 z-10 bg-white group-hover:bg-slate-50">{st.number}</td>
+                <td className="p-3 font-bold sticky left-[48px] z-10 bg-white group-hover:bg-slate-50">{st.name}</td>
+                {cols.map(c=><td key={c.k} style={{minWidth:colW[c.k], maxWidth:colW[c.k]}} className={`p-2 relative ${c.k==='scholarship'&&!isEditing?'text-amber-600 font-bold':''}`}>
+                  {isEditing ? (
+                    c.o ? <select className="w-full p-1 border rounded bg-slate-50 text-sm" value={d[c.k]||''} onChange={e=>setEditData({...d, [c.k]:e.target.value})}>{c.o.map(o=><option key={o} value={o}>{o||'-'}</option>)}</select> 
+                        : <input type="text" className="w-full p-1 border rounded bg-slate-50 text-sm" value={d[c.k]||''} onChange={e=>setEditData({...d, [c.k]:e.target.value})} />
+                  ) : (
+                    <div className="truncate pr-2">{d[c.k]||'-'}</div>
+                  )}
+                </td>)}
+                <td className="p-2 sticky right-0 z-10 bg-white group-hover:bg-slate-50 border-l text-center">
+                  {isEditing ? (
+                    <div className="flex gap-1 justify-center">
+                      <button onClick={()=>{setDetails({...details, [st.id]:editData}); setEditingId(null); showToast("保存しました");}} className="p-1.5 bg-indigo-600 text-white rounded hover:bg-indigo-700"><Icon name="Check" size={14}/></button>
+                      <button onClick={()=>setEditingId(null)} className="p-1.5 bg-slate-200 text-slate-600 rounded hover:bg-slate-300"><Icon name="X" size={14}/></button>
+                    </div>
+                  ) : (
+                    <button onClick={()=>{setEditingId(st.id); setEditData(details[st.id]||{});}} className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded"><Icon name="Edit3" size={16}/></button>
+                  )}
+                </td>
+              </tr>})}</tbody></table>
           </div>
         </div>
       );
@@ -258,7 +303,7 @@
       };
       const ul = e => impCSV(e.target.files[0], lines => {
         const nG={...(grades[sel]||{})}; let cnt=0;
-        lines.forEach(v=>{ const st=students.find(x=>x.number===parseInt(v[0])); if(st){ nG[st.id]={kokugo:v[2],shakai:v[3],sugaku:v[4],rika:v[5],eigo:v[6],total:v[7],average:v[8],class_rank:v[9],grade_rank:v[10]}; cnt++; }});
+        lines.forEach(v=>{ const st=students.find(x=>x.number===parseInt(v.split(',')[0])); if(st){ const a=v.split(','); nG[st.id]={kokugo:a[2],shakai:a[3],sugaku:a[4],rika:a[5],eigo:a[6],total:a[7],average:a[8],class_rank:a[9],grade_rank:a[10]}; cnt++; }});
         setGrades(p=>({...p,[sel]:nG})); e.target.value=null; showToast(`${cnt}名読込`);
       });
       const thC = "p-3 cursor-pointer hover:bg-slate-100 text-center";
@@ -291,7 +336,7 @@
       };
       const ul = e => impCSV(e.target.files[0], lines => {
         const nG={...(mockGrades[sel]||{})}; let cnt=0;
-        lines.forEach(v=>{ const st=students.find(x=>x.number===parseInt(v[0])); if(st){ nG[st.id]={total_score:v[2],total_dev:v[3],kokugo_score:v[4],kokugo_dev:v[5],sugaku_score:v[6],sugaku_dev:v[7],eigo_score:v[8],eigo_dev:v[9]}; cnt++; }});
+        lines.forEach(v=>{ const st=students.find(x=>x.number===parseInt(v.split(',')[0])); if(st){ const a=v.split(','); nG[st.id]={total_score:a[2],total_dev:a[3],kokugo_score:a[4],kokugo_dev:a[5],sugaku_score:a[6],sugaku_dev:a[7],eigo_score:a[8],eigo_dev:a[9]}; cnt++; }});
         setMockGrades(p=>({...p,[sel]:nG})); e.target.value=null; showToast(`${cnt}名読込`);
       });
       const thC = "p-2 cursor-pointer hover:bg-slate-100 text-center text-xs";
