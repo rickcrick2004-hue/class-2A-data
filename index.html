@@ -27,7 +27,7 @@
 <body class="bg-slate-50 text-slate-800 font-sans selection:bg-blue-100 selection:text-blue-900">
   <div id="root"></div>
 
-  <script type="text/babel">
+  <script type="text/babel" data-type="module">
     const { useState, useEffect, useRef, useCallback } = React;
 
     // --- 完全内蔵版アイコン群（外部に依存しない） ---
@@ -258,7 +258,7 @@
       };
       const ul = e => impCSV(e.target.files[0], lines => {
         const nG={...(grades[sel]||{})}; let cnt=0;
-        lines.forEach(v=>{ const st=students.find(x=>x.number===parseInt(v.split(',')[0])); if(st){ const a=v.split(','); nG[st.id]={kokugo:a[2],shakai:a[3],sugaku:a[4],rika:a[5],eigo:a[6],total:a[7],average:a[8],class_rank:a[9],grade_rank:a[10]}; cnt++; }});
+        lines.forEach(v=>{ const st=students.find(x=>x.number===parseInt(v[0])); if(st){ nG[st.id]={kokugo:v[2],shakai:v[3],sugaku:v[4],rika:v[5],eigo:v[6],total:v[7],average:v[8],class_rank:v[9],grade_rank:v[10]}; cnt++; }});
         setGrades(p=>({...p,[sel]:nG})); e.target.value=null; showToast(`${cnt}名読込`);
       });
       const thC = "p-3 cursor-pointer hover:bg-slate-100 text-center";
@@ -291,7 +291,7 @@
       };
       const ul = e => impCSV(e.target.files[0], lines => {
         const nG={...(mockGrades[sel]||{})}; let cnt=0;
-        lines.forEach(v=>{ const st=students.find(x=>x.number===parseInt(v.split(',')[0])); if(st){ const a=v.split(','); nG[st.id]={total_score:a[2],total_dev:a[3],kokugo_score:a[4],kokugo_dev:a[5],sugaku_score:a[6],sugaku_dev:a[7],eigo_score:a[8],eigo_dev:a[9]}; cnt++; }});
+        lines.forEach(v=>{ const st=students.find(x=>x.number===parseInt(v[0])); if(st){ nG[st.id]={total_score:v[2],total_dev:v[3],kokugo_score:v[4],kokugo_dev:v[5],sugaku_score:v[6],sugaku_dev:v[7],eigo_score:v[8],eigo_dev:v[9]}; cnt++; }});
         setMockGrades(p=>({...p,[sel]:nG})); e.target.value=null; showToast(`${cnt}名読込`);
       });
       const thC = "p-2 cursor-pointer hover:bg-slate-100 text-center text-xs";
@@ -581,7 +581,7 @@
               <div>
                 <h1 className="text-xl font-bold text-blue-700 flex items-center gap-2"><Icon name="Users" size={24} className="text-blue-600"/>中2A クラスノート</h1>
                 <div className="flex items-center gap-2 mt-2">
-                  <span className="text-[10px] font-mono bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded border">v1.9.5</span>
+                  <span className="text-[10px] font-mono bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded border">v1.9.6</span>
                   {isCloudReady ? (saveStatus === 'saving' ? <span className="flex items-center gap-1 text-[10px] text-amber-600 font-bold bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200"><Icon name="Loader2" size={10} className="animate-spin"/> 保存中</span> : <span className="flex items-center gap-1 text-[10px] text-emerald-600 font-bold bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-100">自動同期ON</span>) : <span className="text-[10px] text-slate-400 font-bold bg-slate-50 px-1.5 py-0.5 rounded border">同期OFF</span>}
                 </div>
               </div>
@@ -622,7 +622,7 @@
             <div className="md:hidden bg-white border-b p-4 flex items-center justify-between print-hide">
               <div className="flex items-center gap-2"><button onClick={() => setIsMobileMenuOpen(true)} className="p-2 -ml-2 text-slate-600 hover:bg-slate-100 rounded-lg"><Icon name="Menu" size={24}/></button><span className="font-bold">中2A クラスノート</span></div>
               <div className="flex items-center gap-2">
-                <span className="text-[10px] font-mono bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded border border-slate-200">v1.9.5</span>
+                <span className="text-[10px] font-mono bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded border border-slate-200">v1.9.6</span>
                 {isCloudReady && ( saveStatus === 'saving' ? ( <span className="flex items-center gap-1 text-[10px] text-amber-600 font-bold bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200"><Icon name="Loader2" size={10} className="animate-spin" /> 保存中</span> ) : ( <span className="relative flex h-2 w-2"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span><span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span></span> ) )}
               </div>
             </div>
