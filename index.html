@@ -70,7 +70,8 @@
       X: '<line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line>',
       Heart: '<path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/>'
     };
-    const Icon = ({ name, size=24, className="" }) => ICONS[name] ? <svg dangerouslySetInnerHTML={{__html: ICONS[name]}} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} /> : null;
+    const IconComponent = ({ name, size=24, className="" }) => <svg dangerouslySetInnerHTML={{__html: ICONS[name]}} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} />;
+    const Icon = IconComponent;
 
     // --- データ群 ---
     const ST_NAMES = "アラマキ ミナト_荒牧 湊,イシバシ アラタ_石橋 新汰,イトウ タイシ_伊藤 大志,イマコガ サイト_今古賀 采歩,オオノ ソウスケ_大野 颯佑,カイヤ エイスケ_海谷 瑛介,キムラ アラタ_木村 彰汰,クロヒジ ショウ_黒肥地 憧,コガ ヒカル_古賀 光,サカタ オウスケ_坂田 桜助,サカニシ トクマ_坂西 徳馬,シノザキ コウダイ_篠崎 晃大,シマオ ハルマ_島雄 悠,シモセ ナギサ_下瀬 渚,ナガウラ マサト_永浦 正都,マツバ ケイイチ_松葉 圭一,ヤカベ トモキ_矢賀部 友喜,ヨシダ ワタル_吉田 渉,アラキ エミカ_荒木 咲蘭,キタハラ ヒナキ_北原 妃那葵,サトウ ミソラ_佐藤 美空,サワダ アイナ_澤田 愛奈,シバタ レミ_柴田 玲迪,シンムラ アヤカ_新村 彩華,タナカ チヒロ_田中 千尋,ツイジ サキ_築地 咲希,ツカモト マイ_塚本 真衣,ツバキ サラ_椿 咲良,ナカムラ アイカ_中村 碧花,ノジリ カンナ_野尻 かんな,ヒグマ ナナミ_日隈 菜々美,フジシマ アコ_藤嶋 亜子,ミヤザキ サホ_宮崎 咲帆,ムラカミ ココ_村上 瑚々,ヨシトミ アカリ_吉冨 朱莉".split(',');
@@ -464,7 +465,11 @@
             if (customFirebaseConfig) { await signInAnonymously(auth); } 
             else { if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) { await signInWithCustomToken(auth, __initial_auth_token); } else { await signInAnonymously(auth); } }
             onAuthStateChanged(auth, u => setUser(u));
-          } catch (e) { setFirebaseInitError("初期化エラー"); }
+            setFirebaseInitError(null);
+          } catch (e) { 
+            console.error(e); 
+            setFirebaseInitError("初期化エラー: " + (e.code || e.message || "詳細不明")); 
+          }
         };
         initFirebase();
       }, [customFirebaseConfig]);
@@ -686,12 +691,8 @@
       );
     }
 
-    function AppWrapper() {
-      return <App />;
-    }
-
     const root = ReactDOM.createRoot(document.getElementById('root'));
-    root.render(<AppWrapper />);
+    root.render(<App />);
   </script>
 </body>
 </html>
