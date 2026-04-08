@@ -163,7 +163,7 @@
       const [eRId, setERId] = useState(null); const [isE, setIsE] = useState(false); const [eD, setED] = useState({});
       useEffect(() => setED(details), [details]);
       const saveR = (e) => { e.preventDefault(); if(!nR.content) return; onSaveRecord(nR, eRId); setNR({date:new Date().toISOString().split('T')[0], type:'observation', content:''}); setERId(null); };
-      const fields = [ { k:'scholarship',l:'奨学生',o:['','奨A','奨B','奨C'] }, { k:'elementary_school', l:'小学校' }, { k:'club',l:'部活' }, { k:'committee',l:'係・委員' }, { k:'event_role',l:'行事係' }, { k:'strong_subject',l:'得意' }, { k:'weak_subject',l:'苦手' }, { k:'dream',l:'夢' }, { k:'university',l:'志望校' }, { k:'friends',l:'友達' }, { k:'others',l:'他' } ];
+      const fields = [ { k:'scholarship',l:'奨学生',o:['','奨A','奨B','奨C'] }, { k:'elementary_school', l:'小学校' }, { k:'club',l:'部活' }, { k:'committee',l:'係・委員' }, { k:'english_course', l:'英語コース' }, { k:'math_course', l:'数学コース' }, { k:'japanese_course', l:'国語コース' }, { k:'event_role',l:'行事係' }, { k:'strong_subject',l:'得意' }, { k:'weak_subject',l:'苦手' }, { k:'dream',l:'夢' }, { k:'university',l:'志望校' }, { k:'friends',l:'友達' }, { k:'others',l:'他' } ];
       return (
         <div className="max-w-4xl mx-auto print:max-w-none">
           {!isPrint && <div className="print-hide mb-6 flex gap-4 justify-between"><button onClick={onBack} className="flex items-center text-slate-500 hover:bg-white px-4 py-2 rounded-lg"><Icon name="ArrowLeft" size={18} className="mr-2"/> 生徒一覧</button><button onClick={()=>window.print()} className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-bold"><Icon name="Printer" size={18}/> PDF出力</button></div>}
@@ -214,6 +214,9 @@
         {k:'elementary_school', l:'小学校'},
         {k:'club',l:'部活'},
         {k:'committee',l:'係'},
+        {k:'english_course', l:'英語コース'},
+        {k:'math_course', l:'数学コース'},
+        {k:'japanese_course', l:'国語コース'},
         {k:'event_role',l:'行事'},
         {k:'strong_subject',l:'得意'},
         {k:'weak_subject',l:'苦手'},
@@ -236,14 +239,14 @@
           const v=parseCSVLine(l); 
           const st=students.find(x=>x.number===parseInt(v[0])); 
           if(st){ 
-            nD[st.id]={scholarship:v[2], elementary_school:v[3], club:v[4], committee:v[5], event_role:v[6], strong_subject:v[7], weak_subject:v[8], dream:v[9], university:v[10]}; 
+            nD[st.id]={scholarship:v[2], elementary_school:v[3], club:v[4], committee:v[5], english_course:v[6], math_course:v[7], japanese_course:v[8], event_role:v[9], strong_subject:v[10], weak_subject:v[11], dream:v[12], university:v[13]}; 
             cnt++; 
           } 
         });
         setDetails(nD); e.target.value=null; showToast(`${cnt}名読込完了`);
       });
 
-      const [colW, setColW] = useState({ scholarship:80, elementary_school:120, club:100, committee:100, event_role:100, strong_subject:100, weak_subject:100, dream:150, university:150 });
+      const [colW, setColW] = useState({ scholarship:80, elementary_school:120, club:100, committee:100, english_course:90, math_course:90, japanese_course:90, event_role:100, strong_subject:100, weak_subject:100, dream:150, university:150 });
       const resCol = useRef(null); const sX = useRef(0);
       const startRes = (e, k) => { e.preventDefault(); e.stopPropagation(); resCol.current = k; sX.current = e.clientX; const sW = colW[k] || 100; const move = ev => setColW(p => ({...p, [resCol.current]: Math.max(30, sW + (ev.clientX - sX.current))})); const up = () => { resCol.current = null; document.removeEventListener('mousemove', move); document.removeEventListener('mouseup', up); }; document.addEventListener('mousemove', move); document.addEventListener('mouseup', up); };
 
