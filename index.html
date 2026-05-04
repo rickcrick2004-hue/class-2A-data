@@ -70,7 +70,11 @@
       X: '<line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line>',
       Heart: '<path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/>'
     };
-    const IconComponent = ({ name, size=24, className="" }) => <svg dangerouslySetInnerHTML={{__html: ICONS[name]}} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} />;
+    // ★修正: アイコンが見つからない場合にクラッシュしないよう安全対策
+    const IconComponent = ({ name, size=24, className="" }) => {
+      if (!name || !ICONS[name]) return null;
+      return <svg dangerouslySetInnerHTML={{__html: ICONS[name]}} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} />;
+    };
     const Icon = IconComponent;
 
     // --- データ群 ---
@@ -123,13 +127,15 @@
     const PrinciplesView = ({ principles, setPrinciples, showToast, confirmDialog }) => {
       const [nP, setNP] = useState(''); const [eId, setEId] = useState(null);
       const dragItem = useRef(null); const dragOverItem = useRef(null);
+      // ★修正: 配列以外が入ってきた時の安全対策
+      const safePrinciples = Array.isArray(principles) ? principles : [];
 
-      const save = e => { e.preventDefault(); if(!nP.trim()) return; if(eId){ setPrinciples(p=>p.map(x=>x.id===eId?{...x,content:nP}:x)); setEId(null); showToast("更新しました"); }else{ setPrinciples(p=>[{id:Date.now(),content:nP,createdAt:Date.now()},...p]); showToast("追加しました"); } setNP(''); };
-      const del = id => confirmDialog("この指針・心構えを削除しますか？", () => { setPrinciples(p=>p.filter(x=>x.id!==id)); if(eId===id) {setEId(null); setNP('');} showToast("削除しました"); });
+      const save = e => { e.preventDefault(); if(!nP.trim()) return; if(eId){ setPrinciples(p=>(Array.isArray(p)?p:[]).map(x=>x.id===eId?{...x,content:nP}:x)); setEId(null); showToast("更新しました"); }else{ setPrinciples(p=>[{id:Date.now(),content:nP,createdAt:Date.now()},...(Array.isArray(p)?p:[])]); showToast("追加しました"); } setNP(''); };
+      const del = id => confirmDialog("この指針・心構えを削除しますか？", () => { setPrinciples(p=>(Array.isArray(p)?p:[]).filter(x=>x.id!==id)); if(eId===id) {setEId(null); setNP('');} showToast("削除しました"); });
       
       const handleSort = () => {
         if (dragItem.current === null || dragOverItem.current === null || dragItem.current === dragOverItem.current) return;
-        const _principles = [...principles];
+        const _principles = [...safePrinciples];
         const draggedItemContent = _principles.splice(dragItem.current, 1)[0];
         _principles.splice(dragOverItem.current, 0, draggedItemContent);
         dragItem.current = null; dragOverItem.current = null;
@@ -146,7 +152,7 @@
             </form>
           </div>
           <div className="space-y-4">
-            {principles.map((p, idx)=>(
+            {safePrinciples.map((p, idx)=>(
               <div key={p.id} draggable onDragStart={()=>dragItem.current=idx} onDragEnter={()=>dragOverItem.current=idx} onDragEnd={handleSort} onDragOver={e=>e.preventDefault()} className="bg-white p-4 rounded-xl border relative group flex items-start gap-3 cursor-grab active:cursor-grabbing hover:shadow-md transition-all">
                 <div className="text-slate-300 mt-1 cursor-grab"><Icon name="Menu" size={20}/></div>
                 <div className="flex-1">
@@ -169,6 +175,8 @@
       useEffect(() => setED(details), [details]);
       const saveR = (e) => { e.preventDefault(); if(!nR.content) return; onSaveRecord(nR, eRId); setNR({date:new Date().toISOString().split('T')[0], type:'observation', content:''}); setERId(null); };
       const fields = [ { k:'scholarship',l:'奨学生',o:['','奨A','奨B','奨C'] }, { k:'elementary_school', l:'小学校' }, { k:'club',l:'部活' }, { k:'committee',l:'係・委員' }, { k:'english_course', l:'英語コース' }, { k:'math_course', l:'数学コース' }, { k:'japanese_course', l:'国語コース' }, { k:'event_role',l:'行事係' }, { k:'strong_subject',l:'得意' }, { k:'weak_subject',l:'苦手' }, { k:'dream',l:'夢' }, { k:'university',l:'志望校' }, { k:'friends',l:'友達' }, { k:'others',l:'他' } ];
+      const safeRecords = Array.isArray(records) ? records : [];
+      
       return (
         <div className="max-w-4xl mx-auto print:max-w-none">
           {!isPrint && <div className="print-hide mb-6 flex gap-4 justify-between"><button onClick={onBack} className="flex items-center text-slate-500 hover:bg-white px-4 py-2 rounded-lg"><Icon name="ArrowLeft" size={18} className="mr-2"/> 生徒一覧</button><button onClick={()=>window.print()} className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-bold"><Icon name="Printer" size={18}/> PDF出力</button></div>}
@@ -199,7 +207,7 @@
           <div>
             <h3 className="font-bold border-b pb-2 mb-4">これまでの記録</h3>
             <div className="space-y-4">
-              {records.length > 0 ? records.map(r => {
+              {safeRecords.length > 0 ? safeRecords.map(r => {
                 const t = RECORD_TYPES[r.type];
                 return <div key={r.id} className="flex gap-4 group"><div className="w-24 shrink-0 text-sm text-slate-500 font-bold pt-2">{r.date}</div><div className="flex-1 bg-white p-4 rounded-xl border relative"><div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 print-hide flex gap-1"><button onClick={()=>{setNR({date:r.date,type:r.type,content:r.content});setERId(r.id);window.scrollTo(0,0)}} className="p-1 hover:text-blue-600"><Icon name="Edit3" size={16}/></button><button onClick={()=>onDeleteRecord(r.id)} className="p-1 hover:text-red-500"><Icon name="Trash2" size={16}/></button></div><span className={`inline-flex items-center gap-1 text-xs px-2 py-1 rounded font-bold ${t.color}`}><Icon name={t.Icon ? t.Icon.name : 'BookOpen'} size={12} className="print-hide"/> {t.label}</span><p className="mt-2 whitespace-pre-wrap text-sm">{r.content}</p></div></div>
               }) : <p className="text-slate-500 text-center py-8 print-hide">記録はありません。</p>}
@@ -365,8 +373,11 @@
 
     function IncidentsView({ incidents, setIncidents, students, onSelect, showToast, confirmDialog }) {
       const [nI, setNI] = useState({ title:'', date:new Date().toISOString().split('T')[0], inv:[] }); const [eId, setEId] = useState(null);
-      const save = e => { e.preventDefault(); if(!nI.title) return; if(eId){ setIncidents(p=>p.map(i=>i.id===eId?{...i,...nI,involvedStudents:nI.inv}:i).sort((a,b)=>new Date(b.date)-new Date(a.date))); setEId(null); showToast("更新しました"); }else{ setIncidents(p=>[{id:Date.now(),...nI,involvedStudents:nI.inv,status:'active',events:[]},...p].sort((a,b)=>new Date(b.date)-new Date(a.date))); showToast("登録しました"); } setNI({title:'',date:new Date().toISOString().split('T')[0],inv:[]}); };
-      const del = (id,e) => { e.stopPropagation(); confirmDialog("事案と関連記録をすべて削除しますか？", () => { setIncidents(p=>p.filter(i=>i.id!==id)); showToast("削除済"); }); };
+      // ★修正: 配列以外が入ってきた時の安全対策
+      const safeIncidents = Array.isArray(incidents) ? incidents : [];
+
+      const save = e => { e.preventDefault(); if(!nI.title) return; if(eId){ setIncidents(p=>(Array.isArray(p)?p:[]).map(i=>i.id===eId?{...i,...nI,involvedStudents:nI.inv}:i).sort((a,b)=>new Date(b.date)-new Date(a.date))); setEId(null); showToast("更新しました"); }else{ setIncidents(p=>[{id:Date.now(),...nI,involvedStudents:nI.inv,status:'active',events:[]},...(Array.isArray(p)?p:[])].sort((a,b)=>new Date(b.date)-new Date(a.date))); showToast("登録しました"); } setNI({title:'',date:new Date().toISOString().split('T')[0],inv:[]}); };
+      const del = (id,e) => { e.stopPropagation(); confirmDialog("事案と関連記録をすべて削除しますか？", () => { setIncidents(p=>(Array.isArray(p)?p:[]).filter(i=>i.id!==id)); showToast("削除済"); }); };
       return (
         <div className="max-w-4xl mx-auto">
           <h2 className="text-2xl font-bold mb-6">生徒・保護者対応</h2>
@@ -378,7 +389,7 @@
               <div className="flex justify-end gap-2">{eId&&<button type="button" onClick={()=>{setEId(null);setNI({title:'',date:new Date().toISOString().split('T')[0],inv:[]})}} className="px-4 py-2 bg-slate-100 rounded text-sm font-bold">キャンセル</button>}<button className="px-6 py-2 bg-blue-600 text-white rounded text-sm font-bold">{eId?"更新":"登録"}</button></div>
             </form>
           </div>
-          <div className="space-y-3">{incidents.map(i => (
+          <div className="space-y-3">{safeIncidents.map(i => (
             <div key={i.id} onClick={()=>onSelect(i.id)} className={`bg-white p-4 rounded-xl border cursor-pointer group relative ${i.status==='active'?'border-amber-300 ring-2 ring-amber-50':''}`}>
               <div className="absolute top-4 right-12 opacity-0 group-hover:opacity-100 flex gap-1"><button onClick={e=>{e.stopPropagation();setNI({title:i.title,date:i.date,inv:i.involvedStudents});setEId(i.id);window.scrollTo(0,0)}} className="p-1 hover:text-blue-500"><Icon name="Edit3" size={16}/></button><button onClick={e=>del(i.id,e)} className="p-1 hover:text-red-500"><Icon name="Trash2" size={16}/></button></div>
               <div className="flex items-center gap-2 mb-2">{i.status==='active'?<span className="text-xs px-2 py-1 bg-amber-100 text-amber-700 rounded font-bold">対応中</span>:<span className="text-xs px-2 py-1 bg-slate-100 rounded font-bold">解決済</span>}<span className="text-xs text-slate-400">{i.date}</span></div>
@@ -393,6 +404,8 @@
 
     function IncidentDetail({ inc, students, setInc, onBack, onPrint, showToast, confirmDialog }) {
       const [ev, setEv] = useState({ dt: new Date().toISOString().slice(0,16), ty: INC_TYPES[0], co: '' }); const [eId, setEId] = useState(null);
+      if (!inc) return null; // ★修正: incが存在しない場合の安全対策
+
       const save = e => { e.preventDefault(); if(!ev.co)return; setInc(p=>p.map(x=>x.id===inc.id?{...x,events:eId?x.events.map(y=>y.id===eId?{...y,datetime:ev.dt,type:ev.ty,content:ev.co}:y):[...(x.events||[]),{id:Date.now(),datetime:ev.dt,type:ev.ty,content:ev.co}]}:x)); setEId(null); setEv({dt:new Date().toISOString().slice(0,16),ty:INC_TYPES[0],co:''}); showToast("保存しました"); };
       const del = id => confirmDialog("この記録を削除しますか？", () => setInc(p=>p.map(x=>x.id===inc.id?{...x,events:x.events.filter(y=>y.id!==id)}:x)));
       return (
@@ -401,6 +414,42 @@
           <div className={`bg-white p-8 rounded-xl border mb-8 ${inc.status==='active'?'border-amber-300':''}`}><div className="flex justify-between mb-4"><div className="flex items-center gap-3"><span className="bg-slate-100 px-2 py-1 rounded text-xs font-bold">{inc.status==='active'?'対応中':'解決済'}</span><span className="text-slate-500 text-sm font-bold">発生日: {inc.date}</span></div><button onClick={()=>setInc(p=>p.map(x=>x.id===inc.id?{...x,status:inc.status==='active'?'resolved':'active'}:x))} className="text-xs border px-2 py-1 rounded hover:bg-slate-50">{inc.status==='active'?'解決済にする':'対応中に戻す'}</button></div><h2 className="text-2xl font-bold mb-4">{inc.title}</h2><div className="flex gap-2 flex-wrap">{inc.involvedStudents.map(id=>{const st=students.find(x=>x.id===id);return st?<span key={id} className="text-sm px-3 py-1 bg-blue-50 text-blue-800 border-blue-200 border rounded-lg">{st.name}</span>:null})}</div></div>
           <div className="bg-white p-6 rounded-xl border mb-8"><h3 className="font-bold mb-4 flex gap-2"><Icon name={eId?"Edit3":"Plus"} size={20} className="text-blue-600"/>{eId?"記録編集":"対応追加"}</h3><form onSubmit={save} className="space-y-4"><div className="flex gap-4"><input type="datetime-local" required className="flex-[2] p-3 bg-slate-50 border rounded focus:ring-2 focus:ring-blue-500" value={ev.dt} onChange={e=>setEv({...ev,dt:e.target.value})}/><select className="flex-1 p-3 bg-slate-50 border rounded focus:ring-2 focus:ring-blue-500" value={ev.ty} onChange={e=>setEv({...ev,ty:e.target.value})}>{INC_TYPES.map(t=><option key={t}>{t}</option>)}</select></div><textarea required className="w-full p-4 bg-slate-50 border rounded h-32 focus:ring-2 focus:ring-blue-500" value={ev.co} onChange={e=>setEv({...ev,co:e.target.value})}/><div className="flex justify-end gap-2">{eId&&<button type="button" onClick={()=>{setEId(null);setEv({dt:new Date().toISOString().slice(0,16),ty:INC_TYPES[0],co:''})}} className="px-4 py-2 bg-slate-100 rounded text-sm font-bold">キャンセル</button>}<button className="px-6 py-2 bg-slate-800 text-white rounded text-sm font-bold">{eId?"更新":"保存"}</button></div></form></div>
           <div className="space-y-4">{(inc.events||[]).sort((a,b)=>new Date(b.datetime)-new Date(a.datetime)).map(e=>(<div key={e.id} className="bg-white p-4 rounded-xl border relative group"><div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 flex gap-1"><button onClick={()=>{setEv({dt:e.datetime,ty:e.type,co:e.content});setEId(e.id);window.scrollTo(0,0)}} className="p-1 hover:text-blue-500"><Icon name="Edit3" size={16}/></button><button onClick={()=>del(e.id)} className="p-1 hover:text-red-500"><Icon name="Trash2" size={16}/></button></div><div className="flex gap-2 items-center mb-2"><span className="text-xs font-bold text-slate-500">{e.datetime.replace('T',' ')}</span><span className="text-xs px-2 py-0.5 bg-slate-100 border rounded font-bold">{e.type}</span></div><p className="whitespace-pre-wrap text-sm">{e.content}</p></div>))}</div>
+        </div>
+      );
+    }
+
+    function IdeasView({ ideas, setIdeas, showToast, confirmDialog }) {
+      const [nI, setNI] = useState({ ty:'my_idea', co:'' }); const [eId, setEId] = useState(null); const [sb, setSb] = useState('date_desc');
+      // ★修正: 配列以外が入ってきた時の安全対策
+      const safeIdeas = Array.isArray(ideas) ? ideas : [];
+
+      const save = e => { e.preventDefault(); if(!nI.co)return; if(eId){ setIdeas(p=>(Array.isArray(p)?p:[]).map(i=>i.id===eId?{...i,type:nI.ty,content:nI.co}:i)); setEId(null); showToast("更新しました"); }else{ setIdeas(p=>[{id:Date.now(),type:nI.ty,content:nI.co,createdAt:Date.now(),dateStr:new Date().toISOString().split('T')[0]},...(Array.isArray(p)?p:[])]); showToast("保存しました"); } setNI({ty:'my_idea',co:''}); };
+      const del = id => confirmDialog("アイデアを削除しますか？", () => { setIdeas(p=>(Array.isArray(p)?p:[]).filter(i=>i.id!==id)); if(eId===id){setEId(null);setNI({ty:'my_idea',co:''})} showToast("削除しました"); });
+      const sorted = [...safeIdeas].sort((a,b)=>sb==='date_desc'?(b.createdAt||0)-(a.createdAt||0):sb==='date_asc'?(a.createdAt||0)-(b.createdAt||0):(a.type||'').localeCompare(b.type||''));
+      return (
+        <div className="max-w-4xl mx-auto">
+          <div className="flex justify-between mb-6"><h2 className="text-2xl font-bold">アイデア・学び</h2><select className="border p-2 rounded text-sm font-bold focus:ring-2 focus:ring-blue-500 outline-none" value={sb} onChange={e=>setSb(e.target.value)}><option value="date_desc">新着順</option><option value="date_asc">古い順</option><option value="type">カテゴリ</option></select></div>
+          <div className={`bg-white p-6 rounded-xl border mb-6 ${eId?'border-blue-400 ring-2 ring-blue-50':''}`}><form onSubmit={save} className="space-y-4"><div className="flex gap-2 flex-wrap">{Object.entries(IDEA_TYPES).map(([k,v])=><label key={k} className={`px-4 py-2 border rounded-xl text-sm font-bold cursor-pointer flex items-center gap-2 ${nI.ty===k?'bg-blue-50 border-blue-500':''}`}><input type="radio" className="hidden" checked={nI.ty===k} onChange={()=>setNI({...nI,ty:k})}/><span className={`w-3 h-3 rounded-full ${v.color.split(' ')[0]}`}></span>{v.label}</label>)}</div><textarea required className="w-full p-4 bg-slate-50 border rounded-xl h-24 focus:ring-2 focus:ring-blue-500" value={nI.co} onChange={e=>setNI({...nI,co:e.target.value})} placeholder="メモ..."/><div className="flex justify-end gap-2">{eId&&<button type="button" onClick={()=>{setEId(null);setNI({ty:'my_idea',co:''})}} className="px-4 py-2 bg-slate-100 rounded font-bold text-sm">キャンセル</button>}<button className="px-6 py-2 bg-slate-800 text-white rounded font-bold text-sm">{eId?"更新":"保存"}</button></div></form></div>
+          <div className="grid grid-cols-2 gap-4">{sorted.map(i=>{const t=IDEA_TYPES[i.type]||IDEA_TYPES.others; return <div key={i.id} className="bg-white p-5 rounded-xl border relative group"><div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 flex gap-1"><button onClick={()=>{setNI({ty:i.type,co:i.content});setEId(i.id);window.scrollTo(0,0)}} className="p-1 hover:text-blue-500"><Icon name="Edit3" size={16}/></button><button onClick={()=>del(i.id)} className="p-1 hover:text-red-500"><Icon name="Trash2" size={16}/></button></div><div className="flex justify-between items-center mb-2"><span className={`text-xs px-2 py-1 border rounded-full font-bold ${t.color}`}>{t.label}</span><span className="text-xs text-slate-400 font-bold">{i.dateStr}</span></div><p className="whitespace-pre-wrap text-sm">{i.content}</p></div>})}</div>
+        </div>
+      );
+    }
+
+    function TodosView({ todos, setTodos, showToast, confirmDialog }) {
+      const [nT, setNT] = useState({ ti:'', dt:'', da:new Date().toISOString().split('T')[0], im:false }); const [eId, setEId] = useState(null);
+      // ★修正: 配列以外が入ってきた時の安全対策
+      const safeTodos = Array.isArray(todos) ? todos : [];
+
+      const save = e => { e.preventDefault(); if(!nT.ti)return; if(eId){ setTodos(p=>(Array.isArray(p)?p:[]).map(t=>t.id===eId?{...t,title:nT.ti,detail:nT.dt,date:nT.da,isImportant:nT.im}:t)); setEId(null); showToast("更新しました"); }else{ setTodos(p=>[{id:Date.now(),title:nT.ti,detail:nT.dt,date:nT.da,isImportant:nT.im,isCompleted:false,createdAt:Date.now()},...(Array.isArray(p)?p:[])]); showToast("追加しました"); } setNT({ti:'',dt:'',da:new Date().toISOString().split('T')[0],im:false}); };
+      const del = id => confirmDialog("タスクを削除しますか？", () => { setTodos(p=>(Array.isArray(p)?p:[]).filter(t=>t.id!==id)); if(eId===id){setEId(null);setNT({ti:'',dt:'',da:new Date().toISOString().split('T')[0],im:false})} });
+      const act = safeTodos.filter(t=>!t.isCompleted).sort((a,b)=>{if(a.isImportant&&!b.isImportant)return -1;if(!a.isImportant&&b.isImportant)return 1;if(a.date>b.date)return -1;if(a.date<b.date)return 1;return (b.createdAt||0)-(a.createdAt||0);});
+      const cmp = safeTodos.filter(t=>t.isCompleted).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
+      return (
+        <div className="max-w-4xl mx-auto">
+          <h2 className="text-2xl font-bold mb-6">ToDoリスト</h2>
+          <div className={`bg-white p-6 rounded-xl border mb-8 ${eId?'border-blue-400 ring-2 ring-blue-50':''}`}><form onSubmit={save} className="space-y-4"><div className="flex gap-4"><input required placeholder="タスク名" className="flex-[2] p-3 border bg-slate-50 rounded focus:ring-2 focus:ring-blue-500" value={nT.ti} onChange={e=>setNT({...nT,ti:e.target.value})}/><input type="date" required className="w-32 p-3 border bg-slate-50 rounded focus:ring-2 focus:ring-blue-500" value={nT.da} onChange={e=>setNT({...nT,da:e.target.value})}/></div><textarea placeholder="詳細..." className="w-full p-3 border bg-slate-50 rounded h-16 focus:ring-2 focus:ring-blue-500" value={nT.dt} onChange={e=>setNT({...nT,dt:e.target.value})}/><div className="flex justify-between items-center"><label className="flex items-center gap-2 cursor-pointer font-bold text-sm"><input type="checkbox" checked={nT.im} onChange={e=>setNT({...nT,im:e.target.checked})} className="w-4 h-4 rounded text-amber-500"/> 重要☆</label><div className="flex gap-2">{eId&&<button type="button" onClick={()=>{setEId(null);setNT({ti:'',dt:'',da:new Date().toISOString().split('T')[0],im:false})}} className="px-4 py-2 bg-slate-100 rounded font-bold text-sm">キャンセル</button>}<button className="px-6 py-2 bg-blue-600 text-white rounded font-bold text-sm">{eId?"更新":"追加"}</button></div></div></form></div>
+          <div className="space-y-3 mb-8"><h3 className="font-bold border-b pb-2">未完了 <span className="text-xs bg-slate-100 px-2 rounded-full">{act.length}</span></h3>{act.map(t=>(<div key={t.id} className={`bg-white p-4 rounded-xl border flex gap-3 group relative ${t.isImportant?'border-amber-300 ring-2 ring-amber-50':''}`}><button onClick={()=>setTodos(p=>(Array.isArray(p)?p:[]).map(x=>x.id===t.id?{...x,isCompleted:true}:x))} className="w-6 h-6 border-2 rounded hover:bg-emerald-500 hover:border-emerald-500 text-transparent hover:text-white shrink-0 mt-0.5"><Icon name="Check" size={14}/></button><div className="flex-1"><div className="flex gap-2 items-start"><button onClick={()=>setTodos(p=>(Array.isArray(p)?p:[]).map(x=>x.id===t.id?{...x,isImportant:!x.isImportant}:x))} className={t.isImportant?'text-amber-500':'text-slate-300'}><Icon name="Star" size={18} className={t.isImportant?'fill-current':''}/></button><span className="font-bold flex-1">{t.title}</span><span className="text-xs border px-1.5 py-0.5 rounded bg-slate-50">{t.date}</span></div>{t.dt&&<p className="mt-1 text-sm text-slate-600">{t.dt}</p>}</div><div className="flex flex-col gap-1 opacity-0 group-hover:opacity-100"><button onClick={()=>{setNT({ti:t.title,dt:t.detail||'',da:t.date,im:t.isImportant});setEId(t.id);window.scrollTo(0,0)}} className="p-1 hover:text-blue-500"><Icon name="Edit3" size={18}/></button><button onClick={()=>del(t.id)} className="p-1 hover:text-red-500"><Icon name="Trash2" size={18}/></button></div></div>))}</div>
+          {cmp.length>0 && <div className="space-y-2"><h3 className="font-bold border-b pb-2 text-slate-500">完了済 <span className="text-xs bg-slate-100 px-2 rounded-full">{cmp.length}</span></h3>{cmp.map(t=>(<div key={t.id} className="bg-slate-50 p-3 rounded-lg border flex gap-3 items-center group opacity-70 hover:opacity-100"><button onClick={()=>setTodos(p=>(Array.isArray(p)?p:[]).map(x=>x.id===t.id?{...x,isCompleted:false}:x))} className="w-6 h-6 bg-emerald-500 text-white rounded shrink-0 flex items-center justify-center"><Icon name="Check" size={14}/></button><span className="line-through flex-1 text-sm text-slate-500">{t.title}</span><button onClick={()=>del(t.id)} className="opacity-0 group-hover:opacity-100 hover:text-red-500 p-1"><Icon name="Trash2" size={16}/></button></div>))}</div>}
         </div>
       );
     }
@@ -450,7 +499,6 @@
 
       useEffect(() => { localStorage.setItem('classNoteSyncId', syncId); }, [syncId]);
       
-      // ★修正：認証エラーでもDBインスタンスがあれば読み込みを試行するように条件を緩和
       const isCloudReady = syncId.trim() !== '' && dbInstance;
 
       const showToast = useCallback((msg) => { setToast(msg); setTimeout(() => setToast(null), 3000); }, []);
@@ -488,7 +536,6 @@
             const auth = getAuth(app); const db = getFirestore(app);
             setDbInstance(db);
             
-            // ★修正：認証がブラウザにブロックされても、データ読み込みを止めないようエラーをスキップ
             try {
               if (customFirebaseConfig) { await signInAnonymously(auth); } 
               else { if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) { await signInWithCustomToken(auth, __initial_auth_token); } else { await signInAnonymously(auth); } }
@@ -512,7 +559,6 @@
       useEffect(() => {
         if (!isCloudReady) return;
         import('https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js').then(({doc, onSnapshot}) => {
-          // ★修正：環境によってIDが変わってもデータが迷子にならないよう、保存先フォルダを完全に固定
           const appId = 'default-app-id';
           const docRef = doc(dbInstance, 'artifacts', appId, 'public', 'data', 'class_notes', syncId.trim());
           const unsub = onSnapshot(docRef, (snap) => {
@@ -522,7 +568,17 @@
               const localDataStr = JSON.stringify(localDataRef.current);
               if (cloudDataStr !== localDataStr) {
                 isRestoringRef.current = true;
-                if(d.records) setRecords(d.records); if(d.events) setEvents(d.events); if(d.goals) setGoals(d.goals); if(d.grades) setGrades(d.grades); if(d.mockGrades) setMockGrades(d.mockGrades); if(d.studentDetails) setStudentDetails(d.studentDetails); if(d.ideas) setIdeas(d.ideas); if(d.todos) setTodos(d.todos); if(d.incidents) setIncidents(d.incidents); if(d.principles) setPrinciples(d.principles);
+                // ★修正: データ復元時に配列以外がセットされないように徹底
+                if(d.records) setRecords(d.records); 
+                if(d.events && Array.isArray(d.events)) setEvents(d.events); 
+                if(d.goals) setGoals(d.goals); 
+                if(d.grades) setGrades(d.grades); 
+                if(d.mockGrades) setMockGrades(d.mockGrades); 
+                if(d.studentDetails) setStudentDetails(d.studentDetails); 
+                if(d.ideas && Array.isArray(d.ideas)) setIdeas(d.ideas); 
+                if(d.todos && Array.isArray(d.todos)) setTodos(d.todos); 
+                if(d.incidents && Array.isArray(d.incidents)) setIncidents(d.incidents); 
+                if(d.principles && Array.isArray(d.principles)) setPrinciples(d.principles);
                 setTimeout(() => { isRestoringRef.current = false; }, 500); 
               }
             }
@@ -541,7 +597,6 @@
         const timer = setTimeout(async () => {
           try {
             const {doc, setDoc} = await import('https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js');
-            // ★修正：データ迷子防止のため固定
             const appId = 'default-app-id';
             await setDoc(doc(dbInstance, 'artifacts', appId, 'public', 'data', 'class_notes', syncId.trim()), localDataRef.current, { merge: true });
             setSaveStatus('saved'); setTimeout(() => setSaveStatus('idle'), 2000);
@@ -570,7 +625,16 @@
           const snap = await getDoc(doc(dbInstance, 'artifacts', appId, 'public', 'data', 'class_notes', syncId.trim()));
           if (snap.exists()) {
             isRestoringRef.current = true; const d = snap.data();
-            if(d.records) setRecords(d.records); if(d.events) setEvents(d.events); if(d.goals) setGoals(d.goals); if(d.grades) setGrades(d.grades); if(d.mockGrades) setMockGrades(d.mockGrades); if(d.studentDetails) setStudentDetails(d.studentDetails); if(d.ideas) setIdeas(d.ideas); if(d.todos) setTodos(d.todos); if(d.incidents) setIncidents(d.incidents); if(d.principles) setPrinciples(d.principles);
+            if(d.records) setRecords(d.records); 
+            if(d.events && Array.isArray(d.events)) setEvents(d.events); 
+            if(d.goals) setGoals(d.goals); 
+            if(d.grades) setGrades(d.grades); 
+            if(d.mockGrades) setMockGrades(d.mockGrades); 
+            if(d.studentDetails) setStudentDetails(d.studentDetails); 
+            if(d.ideas && Array.isArray(d.ideas)) setIdeas(d.ideas); 
+            if(d.todos && Array.isArray(d.todos)) setTodos(d.todos); 
+            if(d.incidents && Array.isArray(d.incidents)) setIncidents(d.incidents); 
+            if(d.principles && Array.isArray(d.principles)) setPrinciples(d.principles);
             setTimeout(() => { isRestoringRef.current = false; }, 500); showToast("手動読込完了");
           } else { showToast("データなし"); }
         } catch (e) { 
@@ -587,7 +651,16 @@
         rd.onload = (ev) => {
           try {
             const d = JSON.parse(ev.target.result); isRestoringRef.current = true;
-            if(d.records) setRecords(d.records); if(d.events) setEvents(d.events); if(d.goals) setGoals(d.goals); if(d.grades) setGrades(d.grades); if(d.mockGrades) setMockGrades(d.mockGrades); if(d.studentDetails) setStudentDetails(d.studentDetails); if(d.ideas) setIdeas(d.ideas); if(d.todos) setTodos(d.todos); if(d.incidents) setIncidents(d.incidents); if(d.principles) setPrinciples(d.principles);
+            if(d.records) setRecords(d.records); 
+            if(d.events && Array.isArray(d.events)) setEvents(d.events); 
+            if(d.goals) setGoals(d.goals); 
+            if(d.grades) setGrades(d.grades); 
+            if(d.mockGrades) setMockGrades(d.mockGrades); 
+            if(d.studentDetails) setStudentDetails(d.studentDetails); 
+            if(d.ideas && Array.isArray(d.ideas)) setIdeas(d.ideas); 
+            if(d.todos && Array.isArray(d.todos)) setTodos(d.todos); 
+            if(d.incidents && Array.isArray(d.incidents)) setIncidents(d.incidents); 
+            if(d.principles && Array.isArray(d.principles)) setPrinciples(d.principles);
             setTimeout(() => { isRestoringRef.current = false; }, 500); showToast('復元完了');
           } catch(err) { showToast('失敗しました'); }
         }; rd.readAsText(f); e.target.value = null;
@@ -608,7 +681,7 @@
           <div className="bg-white text-black p-8 max-w-4xl mx-auto">
             <div className="text-center pb-4 border-b-2 border-slate-800 mb-6"><h1 className="text-2xl font-bold">生徒・保護者対応 報告書</h1><p className="mt-2 text-slate-600 text-sm">出力日: {new Date().toLocaleDateString('ja-JP')} / 状態: {inc.status === 'resolved' ? '解決済' : '対応中'}</p></div>
             <div className="mb-8"><h2 className="text-2xl font-bold mb-3">件名: {inc.title}</h2><div className="flex gap-6 text-base text-slate-800 mb-4 bg-slate-50 p-4 rounded border"><span className="font-bold">発生日: {inc.date}</span><span><span className="font-bold mr-2">関わった生徒:</span>{inc.involvedStudents.map(id => { const st = INITIAL_STUDENTS.find(s => s.id === id); return st ? `${st.number}.${st.name}` : ''; }).join(', ')}</span></div></div>
-            <div><h3 className="text-xl font-bold border-b-2 border-slate-800 pb-2 mb-4">時系列</h3><div className="space-y-4">{(inc.events||[]).sort((a,b) => new Date(a.datetime) - new Date(b.datetime)).map(ev => { const d = new Date(ev.datetime); return <div key={ev.id} className="border p-4 rounded-lg bg-white page-break-inside-avoid"><div className="flex items-center gap-3 mb-2 border-b pb-2"><span className="font-bold text-slate-700">{`${d.getFullYear()}/${(d.getMonth()+1).toString().padStart(2,'0')}/${d.getDate().toString().padStart(2,'0')} ${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}`}</span><span className="bg-slate-100 px-2 py-1 rounded text-xs font-bold border">{ev.type}</span></div><p className="whitespace-pre-wrap text-base">{ev.content}</p></div> })}</div></div>
+            <div><h3 className="text-xl font-bold border-b-2 border-slate-800 pb-2 mb-4">時系列</h3><div className="space-y-4">{(Array.isArray(inc.events)?inc.events:[]).sort((a,b) => new Date(a.datetime) - new Date(b.datetime)).map(ev => { const d = new Date(ev.datetime); return <div key={ev.id} className="border p-4 rounded-lg bg-white page-break-inside-avoid"><div className="flex items-center gap-3 mb-2 border-b pb-2"><span className="font-bold text-slate-700">{`${d.getFullYear()}/${(d.getMonth()+1).toString().padStart(2,'0')}/${d.getDate().toString().padStart(2,'0')} ${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}`}</span><span className="bg-slate-100 px-2 py-1 rounded text-xs font-bold border">{ev.type}</span></div><p className="whitespace-pre-wrap text-base">{ev.content}</p></div> })}</div></div>
           </div>
         );
       }
@@ -629,7 +702,7 @@
               <div>
                 <h1 className="text-xl font-bold text-blue-700 flex items-center gap-2"><Icon name="Users" size={24} className="text-blue-600"/>中2A クラスノート</h1>
                 <div className="flex items-center gap-2 mt-2">
-                  <span className="text-[10px] font-mono bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded border">v2.0.1</span>
+                  <span className="text-[10px] font-mono bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded border">v2.0.2</span>
                   {isCloudReady ? (saveStatus === 'saving' ? <span className="flex items-center gap-1 text-[10px] text-amber-600 font-bold bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200"><Icon name="Loader2" size={10} className="animate-spin"/> 保存中</span> : <span className="flex items-center gap-1 text-[10px] text-emerald-600 font-bold bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-100">自動同期ON</span>) : <span className="text-[10px] text-slate-400 font-bold bg-slate-50 px-1.5 py-0.5 rounded border">同期OFF</span>}
                 </div>
               </div>
@@ -670,7 +743,7 @@
             <div className="md:hidden bg-white border-b p-4 flex items-center justify-between print-hide">
               <div className="flex items-center gap-2"><button onClick={() => setIsMobileMenuOpen(true)} className="p-2 -ml-2 text-slate-600 hover:bg-slate-100 rounded-lg"><Icon name="Menu" size={24}/></button><span className="font-bold">中2A クラスノート</span></div>
               <div className="flex items-center gap-2">
-                <span className="text-[10px] font-mono bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded border border-slate-200">v2.0.1</span>
+                <span className="text-[10px] font-mono bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded border border-slate-200">v2.0.2</span>
                 {isCloudReady && ( saveStatus === 'saving' ? ( <span className="flex items-center gap-1 text-[10px] text-amber-600 font-bold bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200"><Icon name="Loader2" size={10} className="animate-spin" /> 保存中</span> ) : ( <span className="relative flex h-2 w-2"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span><span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span></span> ) )}
               </div>
             </div>
@@ -689,7 +762,7 @@
                 <div className="max-w-6xl mx-auto animate-in fade-in duration-300">
                   <header className="mb-8"><h2 className="text-2xl font-bold">生徒一覧 <span className="text-base font-normal text-slate-500 bg-slate-200 px-3 py-1 rounded-full">{INITIAL_STUDENTS.length}名</span></h2></header>
                   <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">{INITIAL_STUDENTS.map(s => { 
-                    const c = (records[s.id]||[]).length; const d = studentDetails[s.id]||{}; 
+                    const c = (Array.isArray(records[s.id])?records[s.id]:[]).length; const d = studentDetails[s.id]||{}; 
                     let lG = null, lTN = ''; for (let i = TEST_TERMS.length - 1; i >= 0; i--) { const g = grades[TEST_TERMS[i].id]?.[s.id]; if (g && g.total) { lG = g; lTN = TEST_TERMS[i].name; break; } }
                     let lM = null, lMN = ''; for (let i = MOCK_EXAMS.length - 1; i >= 0; i--) { const m = mockGrades[MOCK_EXAMS[i].id]?.[s.id]; if (m && m.total_dev) { lM = m; lMN = MOCK_EXAMS[i].name; break; } }
                     return <div key={s.id} onClick={()=>setSelectedStudentId(s.id)} className="bg-white p-5 rounded-2xl shadow-sm border hover:border-blue-400 cursor-pointer flex flex-col justify-between group">
@@ -701,7 +774,7 @@
                   })}</div>
                 </div>
               )}
-              {activeTab === 'students' && selectedStudentId && <StudentDetail student={INITIAL_STUDENTS.find(s=>s.id===selectedStudentId)} records={records[selectedStudentId]||[]} studentGrades={TEST_TERMS.reduce((a,t)=>({...a,[t.id]:grades[t.id]?.[selectedStudentId]||null}),{})} studentMockGrades={MOCK_EXAMS.reduce((a,m)=>({...a,[m.id]:mockGrades[m.id]?.[selectedStudentId]||null}),{})} details={studentDetails[selectedStudentId]||{}} onUpdateDetails={d=>{setStudentDetails(p=>({...p,[selectedStudentId]:d}));showToast("更新しました");}} onSaveRecord={(r,id)=>{setRecords(p=>({...p,[selectedStudentId]:(id?(p[selectedStudentId]||[]).map(x=>x.id===id?{...r,id}:x):[{...r,id:Date.now()},...(p[selectedStudentId]||[])]).sort((a,b)=>new Date(b.date)-new Date(a.date))}));showToast("保存完了");}} onDeleteRecord={id=>confirmDialog("削除しますか？", () => {setRecords(p=>({...p,[selectedStudentId]:(p[selectedStudentId]||[]).filter(x=>x.id!==id)}));showToast("削除済");})} onBack={()=>setSelectedStudentId(null)} isPrint={false} confirmDialog={confirmDialog} />}
+              {activeTab === 'students' && selectedStudentId && <StudentDetail student={INITIAL_STUDENTS.find(s=>s.id===selectedStudentId)} records={records[selectedStudentId]||[]} studentGrades={TEST_TERMS.reduce((a,t)=>({...a,[t.id]:grades[t.id]?.[selectedStudentId]||null}),{})} studentMockGrades={MOCK_EXAMS.reduce((a,m)=>({...a,[m.id]:mockGrades[m.id]?.[selectedStudentId]||null}),{})} details={studentDetails[selectedStudentId]||{}} onUpdateDetails={d=>{setStudentDetails(p=>({...p,[selectedStudentId]:d}));showToast("更新しました");}} onSaveRecord={(r,id)=>{setRecords(p=>({...p,[selectedStudentId]:(id?(p[selectedStudentId]||[]).map(x=>x.id===id?{...r,id}:x):[{...r,id:Date.now()},...(Array.isArray(p[selectedStudentId])?p[selectedStudentId]:[])]).sort((a,b)=>new Date(b.date)-new Date(a.date))}));showToast("保存完了");}} onDeleteRecord={id=>confirmDialog("削除しますか？", () => {setRecords(p=>({...p,[selectedStudentId]:(Array.isArray(p[selectedStudentId])?p[selectedStudentId]:[]).filter(x=>x.id!==id)}));showToast("削除済");})} onBack={()=>setSelectedStudentId(null)} isPrint={false} confirmDialog={confirmDialog} />}
               {activeTab === 'student_details' && <StudentDetailsView details={studentDetails} setDetails={setStudentDetails} students={INITIAL_STUDENTS} showToast={showToast} />}
               {activeTab === 'grades' && <GradesView grades={grades} setGrades={setGrades} students={INITIAL_STUDENTS} terms={TEST_TERMS} showToast={showToast} />}
               {activeTab === 'mock_grades' && <MockGradesView mockGrades={mockGrades} setMockGrades={setMockGrades} students={INITIAL_STUDENTS} mocks={MOCK_EXAMS} showToast={showToast} />}
@@ -714,9 +787,9 @@
                   <header className="mb-8"><h2 className="text-2xl font-bold">クラスの出来事</h2></header>
                   <div className={`bg-white p-6 rounded-2xl shadow-sm border mb-8 ${editingEventId ? 'border-blue-400 ring-2 ring-blue-50' : ''}`}>
                     <h3 className="font-bold mb-4 flex items-center gap-2"><Icon name={editingEventId?"Edit3":"Plus"} size={20} className="text-blue-600"/> {editingEventId?"編集":"新規登録"}</h3>
-                    <EventForm initialData={editingEventData} isEditing={!!editingEventId} onCancel={()=>{setEditingEventId(null);setEditingEventData(null)}} onSave={(ev)=>{if(editingEventId){setEvents(p=>p.map(x=>x.id===editingEventId?{...ev,id:editingEventId}:x).sort((a,b)=>new Date(b.date)-new Date(a.date)));showToast("更新済");}else{setEvents(p=>[{...ev,id:Date.now()},...p].sort((a,b)=>new Date(b.date)-new Date(a.date)));showToast("保存済");}setEditingEventId(null);setEditingEventData(null);}} />
+                    <EventForm initialData={editingEventData} isEditing={!!editingEventId} onCancel={()=>{setEditingEventId(null);setEditingEventData(null)}} onSave={(ev)=>{if(editingEventId){setEvents(p=>(Array.isArray(p)?p:[]).map(x=>x.id===editingEventId?{...ev,id:editingEventId}:x).sort((a,b)=>new Date(b.date)-new Date(a.date)));showToast("更新済");}else{setEvents(p=>[{...ev,id:Date.now()},...(Array.isArray(p)?p:[])].sort((a,b)=>new Date(b.date)-new Date(a.date)));showToast("保存済");}setEditingEventId(null);setEditingEventData(null);}} />
                   </div>
-                  <div className="space-y-6">{events.length>0 ? events.map(ev=>(<div key={ev.id} className="bg-white p-6 rounded-2xl shadow-sm border group relative"><div className="absolute top-4 right-4 flex gap-1 opacity-0 group-hover:opacity-100"><button onClick={()=>{setEditingEventId(ev.id);setEditingEventData(ev);window.scrollTo(0,0)}} className="p-1 text-slate-400 hover:text-blue-600"><Icon name="Edit3" size={16}/></button><button onClick={()=>{confirmDialog("出来事を削除しますか？", ()=>{setEvents(p=>p.filter(e=>e.id!==ev.id));if(editingEventId===ev.id){setEditingEventId(null);setEditingEventData(null);}})}} className="p-1 text-slate-400 hover:text-red-500"><Icon name="Trash2" size={16}/></button></div><div className="flex justify-between items-center mb-4 pr-16"><h4 className="font-bold text-xl">{ev.title}</h4><span className="text-sm font-bold bg-slate-100 px-3 py-1 rounded-full">{ev.date}</span></div><p className="whitespace-pre-wrap text-slate-700 bg-slate-50 p-4 rounded-xl border">{ev.content}</p></div>)) : <div className="text-center py-12 bg-white rounded-xl border border-dashed text-slate-500">出来事はありません。</div>}</div>
+                  <div className="space-y-6">{(Array.isArray(events)?events:[]).length>0 ? (Array.isArray(events)?events:[]).map(ev=>(<div key={ev.id} className="bg-white p-6 rounded-2xl shadow-sm border group relative"><div className="absolute top-4 right-4 flex gap-1 opacity-0 group-hover:opacity-100"><button onClick={()=>{setEditingEventId(ev.id);setEditingEventData(ev);window.scrollTo(0,0)}} className="p-1 text-slate-400 hover:text-blue-600"><Icon name="Edit3" size={16}/></button><button onClick={()=>{confirmDialog("出来事を削除しますか？", ()=>{setEvents(p=>(Array.isArray(p)?p:[]).filter(e=>e.id!==ev.id));if(editingEventId===ev.id){setEditingEventId(null);setEditingEventData(null);}})}} className="p-1 text-slate-400 hover:text-red-500"><Icon name="Trash2" size={16}/></button></div><div className="flex justify-between items-center mb-4 pr-16"><h4 className="font-bold text-xl">{ev.title}</h4><span className="text-sm font-bold bg-slate-100 px-3 py-1 rounded-full">{ev.date}</span></div><p className="whitespace-pre-wrap text-slate-700 bg-slate-50 p-4 rounded-xl border">{ev.content}</p></div>)) : <div className="text-center py-12 bg-white rounded-xl border border-dashed text-slate-500">出来事はありません。</div>}</div>
                 </div>
               )}
             </div>
