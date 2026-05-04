@@ -405,36 +405,6 @@
       );
     }
 
-    function IdeasView({ ideas, setIdeas, showToast, confirmDialog }) {
-      const [nI, setNI] = useState({ ty:'my_idea', co:'' }); const [eId, setEId] = useState(null); const [sb, setSb] = useState('date_desc');
-      const save = e => { e.preventDefault(); if(!nI.co)return; if(eId){ setIdeas(p=>p.map(i=>i.id===eId?{...i,type:nI.ty,content:nI.co}:i)); setEId(null); showToast("更新しました"); }else{ setIdeas(p=>[{id:Date.now(),type:nI.ty,content:nI.co,createdAt:Date.now(),dateStr:new Date().toISOString().split('T')[0]},...p]); showToast("保存しました"); } setNI({ty:'my_idea',co:''}); };
-      const del = id => confirmDialog("アイデアを削除しますか？", () => { setIdeas(p=>p.filter(i=>i.id!==id)); if(eId===id){setEId(null);setNI({ty:'my_idea',co:''})} showToast("削除しました"); });
-      const sorted = [...ideas].sort((a,b)=>sb==='date_desc'?b.createdAt-a.createdAt:sb==='date_asc'?a.createdAt-b.createdAt:a.type.localeCompare(b.type));
-      return (
-        <div className="max-w-4xl mx-auto">
-          <div className="flex justify-between mb-6"><h2 className="text-2xl font-bold">アイデア・学び</h2><select className="border p-2 rounded text-sm font-bold focus:ring-2 focus:ring-blue-500 outline-none" value={sb} onChange={e=>setSb(e.target.value)}><option value="date_desc">新着順</option><option value="date_asc">古い順</option><option value="type">カテゴリ</option></select></div>
-          <div className={`bg-white p-6 rounded-xl border mb-6 ${eId?'border-blue-400 ring-2 ring-blue-50':''}`}><form onSubmit={save} className="space-y-4"><div className="flex gap-2 flex-wrap">{Object.entries(IDEA_TYPES).map(([k,v])=><label key={k} className={`px-4 py-2 border rounded-xl text-sm font-bold cursor-pointer flex items-center gap-2 ${nI.ty===k?'bg-blue-50 border-blue-500':''}`}><input type="radio" className="hidden" checked={nI.ty===k} onChange={()=>setNI({...nI,ty:k})}/><span className={`w-3 h-3 rounded-full ${v.color.split(' ')[0]}`}></span>{v.label}</label>)}</div><textarea required className="w-full p-4 bg-slate-50 border rounded-xl h-24 focus:ring-2 focus:ring-blue-500" value={nI.co} onChange={e=>setNI({...nI,co:e.target.value})} placeholder="メモ..."/><div className="flex justify-end gap-2">{eId&&<button type="button" onClick={()=>{setEId(null);setNI({ty:'my_idea',co:''})}} className="px-4 py-2 bg-slate-100 rounded font-bold text-sm">キャンセル</button>}<button className="px-6 py-2 bg-slate-800 text-white rounded font-bold text-sm">{eId?"更新":"保存"}</button></div></form></div>
-          <div className="grid grid-cols-2 gap-4">{sorted.map(i=>{const t=IDEA_TYPES[i.type]||IDEA_TYPES.others; return <div key={i.id} className="bg-white p-5 rounded-xl border relative group"><div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 flex gap-1"><button onClick={()=>{setNI({ty:i.type,co:i.content});setEId(i.id);window.scrollTo(0,0)}} className="p-1 hover:text-blue-500"><Icon name="Edit3" size={16}/></button><button onClick={()=>del(i.id)} className="p-1 hover:text-red-500"><Icon name="Trash2" size={16}/></button></div><div className="flex justify-between items-center mb-2"><span className={`text-xs px-2 py-1 border rounded-full font-bold ${t.color}`}>{t.label}</span><span className="text-xs text-slate-400 font-bold">{i.dateStr}</span></div><p className="whitespace-pre-wrap text-sm">{i.content}</p></div>})}</div>
-        </div>
-      );
-    }
-
-    function TodosView({ todos, setTodos, showToast, confirmDialog }) {
-      const [nT, setNT] = useState({ ti:'', dt:'', da:new Date().toISOString().split('T')[0], im:false }); const [eId, setEId] = useState(null);
-      const save = e => { e.preventDefault(); if(!nT.ti)return; if(eId){ setTodos(p=>p.map(t=>t.id===eId?{...t,title:nT.ti,detail:nT.dt,date:nT.da,isImportant:nT.im}:t)); setEId(null); showToast("更新しました"); }else{ setTodos(p=>[{id:Date.now(),title:nT.ti,detail:nT.dt,date:nT.da,isImportant:nT.im,isCompleted:false,createdAt:Date.now()},...p]); showToast("追加しました"); } setNT({ti:'',dt:'',da:new Date().toISOString().split('T')[0],im:false}); };
-      const del = id => confirmDialog("タスクを削除しますか？", () => { setTodos(p=>p.filter(t=>t.id!==id)); if(eId===id){setEId(null);setNT({ti:'',dt:'',da:new Date().toISOString().split('T')[0],im:false})} });
-      const act = todos.filter(t=>!t.isCompleted).sort((a,b)=>{if(a.isImportant&&!b.isImportant)return -1;if(!a.isImportant&&b.isImportant)return 1;if(a.date>b.date)return -1;if(a.date<b.date)return 1;return b.createdAt-a.createdAt});
-      const cmp = todos.filter(t=>t.isCompleted).sort((a,b)=>b.createdAt-a.createdAt);
-      return (
-        <div className="max-w-4xl mx-auto">
-          <h2 className="text-2xl font-bold mb-6">ToDoリスト</h2>
-          <div className={`bg-white p-6 rounded-xl border mb-8 ${eId?'border-blue-400 ring-2 ring-blue-50':''}`}><form onSubmit={save} className="space-y-4"><div className="flex gap-4"><input required placeholder="タスク名" className="flex-[2] p-3 border bg-slate-50 rounded focus:ring-2 focus:ring-blue-500" value={nT.ti} onChange={e=>setNT({...nT,ti:e.target.value})}/><input type="date" required className="w-32 p-3 border bg-slate-50 rounded focus:ring-2 focus:ring-blue-500" value={nT.da} onChange={e=>setNT({...nT,da:e.target.value})}/></div><textarea placeholder="詳細..." className="w-full p-3 border bg-slate-50 rounded h-16 focus:ring-2 focus:ring-blue-500" value={nT.dt} onChange={e=>setNT({...nT,dt:e.target.value})}/><div className="flex justify-between items-center"><label className="flex items-center gap-2 cursor-pointer font-bold text-sm"><input type="checkbox" checked={nT.im} onChange={e=>setNT({...nT,im:e.target.checked})} className="w-4 h-4 rounded text-amber-500"/> 重要☆</label><div className="flex gap-2">{eId&&<button type="button" onClick={()=>{setEId(null);setNT({ti:'',dt:'',da:new Date().toISOString().split('T')[0],im:false})}} className="px-4 py-2 bg-slate-100 rounded font-bold text-sm">キャンセル</button>}<button className="px-6 py-2 bg-blue-600 text-white rounded font-bold text-sm">{eId?"更新":"追加"}</button></div></div></form></div>
-          <div className="space-y-3 mb-8"><h3 className="font-bold border-b pb-2">未完了 <span className="text-xs bg-slate-100 px-2 rounded-full">{act.length}</span></h3>{act.map(t=>(<div key={t.id} className={`bg-white p-4 rounded-xl border flex gap-3 group relative ${t.isImportant?'border-amber-300 ring-2 ring-amber-50':''}`}><button onClick={()=>setTodos(p=>p.map(x=>x.id===t.id?{...x,isCompleted:true}:x))} className="w-6 h-6 border-2 rounded hover:bg-emerald-500 hover:border-emerald-500 text-transparent hover:text-white shrink-0 mt-0.5"><Icon name="Check" size={14}/></button><div className="flex-1"><div className="flex gap-2 items-start"><button onClick={()=>setTodos(p=>p.map(x=>x.id===t.id?{...x,isImportant:!x.isImportant}:x))} className={t.isImportant?'text-amber-500':'text-slate-300'}><Icon name="Star" size={18} className={t.isImportant?'fill-current':''}/></button><span className="font-bold flex-1">{t.title}</span><span className="text-xs border px-1.5 py-0.5 rounded bg-slate-50">{t.date}</span></div>{t.dt&&<p className="mt-1 text-sm text-slate-600">{t.dt}</p>}</div><div className="flex flex-col gap-1 opacity-0 group-hover:opacity-100"><button onClick={()=>{setNT({ti:t.title,dt:t.detail||'',da:t.date,im:t.isImportant});setEId(t.id);window.scrollTo(0,0)}} className="p-1 hover:text-blue-500"><Icon name="Edit3" size={18}/></button><button onClick={()=>del(t.id)} className="p-1 hover:text-red-500"><Icon name="Trash2" size={18}/></button></div></div>))}</div>
-          {cmp.length>0 && <div className="space-y-2"><h3 className="font-bold border-b pb-2 text-slate-500">完了済 <span className="text-xs bg-slate-100 px-2 rounded-full">{cmp.length}</span></h3>{cmp.map(t=>(<div key={t.id} className="bg-slate-50 p-3 rounded-lg border flex gap-3 items-center group opacity-70 hover:opacity-100"><button onClick={()=>setTodos(p=>p.map(x=>x.id===t.id?{...x,isCompleted:false}:x))} className="w-6 h-6 bg-emerald-500 text-white rounded shrink-0 flex items-center justify-center"><Icon name="Check" size={14}/></button><span className="line-through flex-1 text-sm text-slate-500">{t.title}</span><button onClick={()=>del(t.id)} className="opacity-0 group-hover:opacity-100 hover:text-red-500 p-1"><Icon name="Trash2" size={16}/></button></div>))}</div>}
-        </div>
-      );
-    }
-
     // === Main App Component ===
     function App() {
       const [activeTab, setActiveTab] = useState('dashboard');
@@ -557,7 +527,10 @@
               }
             }
             setHasInitialLoaded(true);
-          }, (err) => setHasInitialLoaded(true));
+          }, (err) => {
+            console.error("同期エラー:", err);
+            setHasInitialLoaded(true);
+          });
           return () => unsub();
         });
       }, [isCloudReady, syncId, dbInstance, customFirebaseConfig]);
@@ -572,14 +545,22 @@
             const appId = 'default-app-id';
             await setDoc(doc(dbInstance, 'artifacts', appId, 'public', 'data', 'class_notes', syncId.trim()), localDataRef.current, { merge: true });
             setSaveStatus('saved'); setTimeout(() => setSaveStatus('idle'), 2000);
-          } catch (e) { setSaveStatus('idle'); }
+          } catch (e) { setSaveStatus('idle'); console.error("保存自動エラー:", e); }
         }, 1500); 
         return () => clearTimeout(timer);
       }, [records, events, goals, grades, mockGrades, studentDetails, ideas, todos, incidents, principles, isCloudReady, hasInitialLoaded, dbInstance, syncId, customFirebaseConfig]);
 
       const handlePushCloud = async () => {
         if (!isCloudReady) return showToast("Sync IDを入力してください");
-        try { const {doc, setDoc} = await import('https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js'); const appId = 'default-app-id'; await setDoc(doc(dbInstance, 'artifacts', appId, 'public', 'data', 'class_notes', syncId.trim()), localDataRef.current, { merge: true }); showToast("手動保存完了"); } catch (e) { showToast("保存失敗"); }
+        try { 
+          const {doc, setDoc} = await import('https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js'); 
+          const appId = 'default-app-id'; 
+          await setDoc(doc(dbInstance, 'artifacts', appId, 'public', 'data', 'class_notes', syncId.trim()), localDataRef.current, { merge: true }); 
+          showToast("手動保存完了"); 
+        } catch (e) { 
+          showToast("保存失敗: " + (e.message || "詳細不明")); 
+          console.error(e); 
+        }
       };
       const handlePullCloud = async () => {
         if (!isCloudReady) return showToast("Sync IDを入力してください");
@@ -592,7 +573,10 @@
             if(d.records) setRecords(d.records); if(d.events) setEvents(d.events); if(d.goals) setGoals(d.goals); if(d.grades) setGrades(d.grades); if(d.mockGrades) setMockGrades(d.mockGrades); if(d.studentDetails) setStudentDetails(d.studentDetails); if(d.ideas) setIdeas(d.ideas); if(d.todos) setTodos(d.todos); if(d.incidents) setIncidents(d.incidents); if(d.principles) setPrinciples(d.principles);
             setTimeout(() => { isRestoringRef.current = false; }, 500); showToast("手動読込完了");
           } else { showToast("データなし"); }
-        } catch (e) { showToast("読込失敗"); }
+        } catch (e) { 
+          showToast("読込失敗: " + (e.message || "詳細不明")); 
+          console.error("読込エラー詳細:", e); 
+        }
       };
       const handleExportBackup = () => {
         const b = new Blob([JSON.stringify(localDataRef.current)], { type: 'application/json' });
@@ -645,7 +629,7 @@
               <div>
                 <h1 className="text-xl font-bold text-blue-700 flex items-center gap-2"><Icon name="Users" size={24} className="text-blue-600"/>中2A クラスノート</h1>
                 <div className="flex items-center gap-2 mt-2">
-                  <span className="text-[10px] font-mono bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded border">v2.0.0</span>
+                  <span className="text-[10px] font-mono bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded border">v2.0.1</span>
                   {isCloudReady ? (saveStatus === 'saving' ? <span className="flex items-center gap-1 text-[10px] text-amber-600 font-bold bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200"><Icon name="Loader2" size={10} className="animate-spin"/> 保存中</span> : <span className="flex items-center gap-1 text-[10px] text-emerald-600 font-bold bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-100">自動同期ON</span>) : <span className="text-[10px] text-slate-400 font-bold bg-slate-50 px-1.5 py-0.5 rounded border">同期OFF</span>}
                 </div>
               </div>
@@ -686,7 +670,7 @@
             <div className="md:hidden bg-white border-b p-4 flex items-center justify-between print-hide">
               <div className="flex items-center gap-2"><button onClick={() => setIsMobileMenuOpen(true)} className="p-2 -ml-2 text-slate-600 hover:bg-slate-100 rounded-lg"><Icon name="Menu" size={24}/></button><span className="font-bold">中2A クラスノート</span></div>
               <div className="flex items-center gap-2">
-                <span className="text-[10px] font-mono bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded border border-slate-200">v2.0.0</span>
+                <span className="text-[10px] font-mono bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded border border-slate-200">v2.0.1</span>
                 {isCloudReady && ( saveStatus === 'saving' ? ( <span className="flex items-center gap-1 text-[10px] text-amber-600 font-bold bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200"><Icon name="Loader2" size={10} className="animate-spin" /> 保存中</span> ) : ( <span className="relative flex h-2 w-2"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span><span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span></span> ) )}
               </div>
             </div>
