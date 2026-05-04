@@ -98,7 +98,12 @@
     function EventForm({ onSave, initialData, isEditing, onCancel }) {
       const [event, setEvent] = useState({ title: '', date: new Date().toISOString().split('T')[0], content: '' });
       useEffect(() => { if (initialData) setEvent(initialData); else setEvent({ title: '', date: new Date().toISOString().split('T')[0], content: '' }); }, [initialData]);
-      const handleSubmit = (e) => { e.preventDefault(); if (!event.title.trim() || !event.content.trim()) return; onSave(event); };
+      const handleSubmit = (e) => { 
+        e.preventDefault(); 
+        if (!event.title.trim() || !event.content.trim()) return; 
+        onSave(event); 
+        if (!isEditing) setEvent({ title: '', date: new Date().toISOString().split('T')[0], content: '' });
+      };
 
       return (
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -196,7 +201,7 @@
             <div className="space-y-4">
               {records.length > 0 ? records.map(r => {
                 const t = RECORD_TYPES[r.type];
-                return <div key={r.id} className="flex gap-4 group"><div className="w-24 shrink-0 text-sm text-slate-500 font-bold pt-2">{r.date}</div><div className="flex-1 bg-white p-4 rounded-xl border relative"><div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 print-hide flex gap-1"><button onClick={()=>{setNR({date:r.date,type:r.type,content:r.content});setERId(r.id);window.scrollTo(0,0)}} className="p-1 hover:text-blue-600"><Icon name="Edit3" size={16}/></button><button onClick={()=>onDeleteRecord(r.id)} className="p-1 hover:text-red-500"><Icon name="Trash2" size={16}/></button></div><span className={`inline-flex items-center gap-1 text-xs px-2 py-1 rounded font-bold ${t.color}`}><Icon name={t.icon} size={12} className="print-hide"/> {t.label}</span><p className="mt-2 whitespace-pre-wrap text-sm">{r.content}</p></div></div>
+                return <div key={r.id} className="flex gap-4 group"><div className="w-24 shrink-0 text-sm text-slate-500 font-bold pt-2">{r.date}</div><div className="flex-1 bg-white p-4 rounded-xl border relative"><div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 print-hide flex gap-1"><button onClick={()=>{setNR({date:r.date,type:r.type,content:r.content});setERId(r.id);window.scrollTo(0,0)}} className="p-1 hover:text-blue-600"><Icon name="Edit3" size={16}/></button><button onClick={()=>onDeleteRecord(r.id)} className="p-1 hover:text-red-500"><Icon name="Trash2" size={16}/></button></div><span className={`inline-flex items-center gap-1 text-xs px-2 py-1 rounded font-bold ${t.color}`}><Icon name={t.Icon ? t.Icon.name : 'BookOpen'} size={12} className="print-hide"/> {t.label}</span><p className="mt-2 whitespace-pre-wrap text-sm">{r.content}</p></div></div>
               }) : <p className="text-slate-500 text-center py-8 print-hide">記録はありません。</p>}
             </div>
           </div>
@@ -474,7 +479,9 @@
       const confirmDialog = useCallback((msg, onConfirm) => setConfirmState({ msg, onConfirm }), []);
 
       useEffect(() => { localStorage.setItem('classNoteSyncId', syncId); }, [syncId]);
-      const isCloudReady = user && syncId.trim() !== '' && dbInstance;
+      
+      // ★修正：認証エラーでもDBインスタンスがあれば読み込みを試行するように条件を緩和
+      const isCloudReady = syncId.trim() !== '' && dbInstance;
 
       const showToast = useCallback((msg) => { setToast(msg); setTimeout(() => setToast(null), 3000); }, []);
 
@@ -510,8 +517,15 @@
             const app = getApps().length === 0 ? initializeApp(conf) : getApp();
             const auth = getAuth(app); const db = getFirestore(app);
             setDbInstance(db);
-            if (customFirebaseConfig) { await signInAnonymously(auth); } 
-            else { if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) { await signInWithCustomToken(auth, __initial_auth_token); } else { await signInAnonymously(auth); } }
+            
+            // ★修正：認証がブラウザにブロックされても、データ読み込みを止めないようエラーをスキップ
+            try {
+              if (customFirebaseConfig) { await signInAnonymously(auth); } 
+              else { if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) { await signInWithCustomToken(auth, __initial_auth_token); } else { await signInAnonymously(auth); } }
+            } catch (authErr) {
+              console.warn("ログイン処理がブロックされましたが、公開データへのアクセスを試みます:", authErr);
+            }
+            
             onAuthStateChanged(auth, u => setUser(u));
             setFirebaseInitError(null);
           } catch (e) { 
@@ -528,7 +542,8 @@
       useEffect(() => {
         if (!isCloudReady) return;
         import('https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js').then(({doc, onSnapshot}) => {
-          const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+          // ★修正：環境によってIDが変わってもデータが迷子にならないよう、保存先フォルダを完全に固定
+          const appId = 'default-app-id';
           const docRef = doc(dbInstance, 'artifacts', appId, 'public', 'data', 'class_notes', syncId.trim());
           const unsub = onSnapshot(docRef, (snap) => {
             if (snap.exists() && !snap.metadata.hasPendingWrites) {
@@ -545,7 +560,7 @@
           }, (err) => setHasInitialLoaded(true));
           return () => unsub();
         });
-      }, [isCloudReady, syncId, dbInstance]);
+      }, [isCloudReady, syncId, dbInstance, customFirebaseConfig]);
 
       useEffect(() => {
         if (!isCloudReady || !hasInitialLoaded || isRestoringRef.current) return;
@@ -553,23 +568,24 @@
         const timer = setTimeout(async () => {
           try {
             const {doc, setDoc} = await import('https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js');
-            const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+            // ★修正：データ迷子防止のため固定
+            const appId = 'default-app-id';
             await setDoc(doc(dbInstance, 'artifacts', appId, 'public', 'data', 'class_notes', syncId.trim()), localDataRef.current, { merge: true });
             setSaveStatus('saved'); setTimeout(() => setSaveStatus('idle'), 2000);
           } catch (e) { setSaveStatus('idle'); }
         }, 1500); 
         return () => clearTimeout(timer);
-      }, [records, events, goals, grades, mockGrades, studentDetails, ideas, todos, incidents, principles, isCloudReady, hasInitialLoaded, dbInstance, syncId]);
+      }, [records, events, goals, grades, mockGrades, studentDetails, ideas, todos, incidents, principles, isCloudReady, hasInitialLoaded, dbInstance, syncId, customFirebaseConfig]);
 
       const handlePushCloud = async () => {
         if (!isCloudReady) return showToast("Sync IDを入力してください");
-        try { const {doc, setDoc} = await import('https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js'); const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id'; await setDoc(doc(dbInstance, 'artifacts', appId, 'public', 'data', 'class_notes', syncId.trim()), localDataRef.current, { merge: true }); showToast("手動保存完了"); } catch (e) { showToast("保存失敗"); }
+        try { const {doc, setDoc} = await import('https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js'); const appId = 'default-app-id'; await setDoc(doc(dbInstance, 'artifacts', appId, 'public', 'data', 'class_notes', syncId.trim()), localDataRef.current, { merge: true }); showToast("手動保存完了"); } catch (e) { showToast("保存失敗"); }
       };
       const handlePullCloud = async () => {
         if (!isCloudReady) return showToast("Sync IDを入力してください");
         try {
           const {doc, getDoc} = await import('https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js');
-          const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+          const appId = 'default-app-id';
           const snap = await getDoc(doc(dbInstance, 'artifacts', appId, 'public', 'data', 'class_notes', syncId.trim()));
           if (snap.exists()) {
             isRestoringRef.current = true; const d = snap.data();
@@ -629,7 +645,7 @@
               <div>
                 <h1 className="text-xl font-bold text-blue-700 flex items-center gap-2"><Icon name="Users" size={24} className="text-blue-600"/>中2A クラスノート</h1>
                 <div className="flex items-center gap-2 mt-2">
-                  <span className="text-[10px] font-mono bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded border">v1.9.6</span>
+                  <span className="text-[10px] font-mono bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded border">v2.0.0</span>
                   {isCloudReady ? (saveStatus === 'saving' ? <span className="flex items-center gap-1 text-[10px] text-amber-600 font-bold bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200"><Icon name="Loader2" size={10} className="animate-spin"/> 保存中</span> : <span className="flex items-center gap-1 text-[10px] text-emerald-600 font-bold bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-100">自動同期ON</span>) : <span className="text-[10px] text-slate-400 font-bold bg-slate-50 px-1.5 py-0.5 rounded border">同期OFF</span>}
                 </div>
               </div>
@@ -670,7 +686,7 @@
             <div className="md:hidden bg-white border-b p-4 flex items-center justify-between print-hide">
               <div className="flex items-center gap-2"><button onClick={() => setIsMobileMenuOpen(true)} className="p-2 -ml-2 text-slate-600 hover:bg-slate-100 rounded-lg"><Icon name="Menu" size={24}/></button><span className="font-bold">中2A クラスノート</span></div>
               <div className="flex items-center gap-2">
-                <span className="text-[10px] font-mono bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded border border-slate-200">v1.9.6</span>
+                <span className="text-[10px] font-mono bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded border border-slate-200">v2.0.0</span>
                 {isCloudReady && ( saveStatus === 'saving' ? ( <span className="flex items-center gap-1 text-[10px] text-amber-600 font-bold bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200"><Icon name="Loader2" size={10} className="animate-spin" /> 保存中</span> ) : ( <span className="relative flex h-2 w-2"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span><span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span></span> ) )}
               </div>
             </div>
