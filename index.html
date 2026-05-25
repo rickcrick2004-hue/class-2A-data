@@ -455,6 +455,30 @@
         return count > 0 ? (sum / count).toFixed(1) : '-';
       });
 
+      let targetSum = 0, targetCount = 0;
+      let totalSum = 0, totalCount = 0;
+      let avgSum = 0, avgCount = 0;
+
+      students.forEach(st => {
+        const d = scheduleData[st.id] || {};
+        const calc = calcStudent(st.id);
+        const targetVal = parseFloat(d.target);
+        if (!isNaN(targetVal)) { targetSum += targetVal; targetCount++; }
+        
+        // 入力が1日でもある生徒のみを総時間と平均の集計に含める
+        let hasInput = false;
+        cols.forEach(c => { if (!isNaN(parseFloat(d[c.id]))) hasInput = true; });
+        
+        if (hasInput) {
+          totalSum += calc.total; totalCount++;
+          avgSum += calc.avg; avgCount++;
+        }
+      });
+
+      const classTargetAvg = targetCount > 0 ? (targetSum / targetCount).toFixed(1) : '-';
+      const classTotalAvg = totalCount > 0 ? (totalSum / totalCount).toFixed(1) : '-';
+      const classAvgAvg = avgCount > 0 ? (avgSum / avgCount).toFixed(1) : '-';
+
       const dl = () => {
         let c = "番,氏名,目標,総勉強時間,平均," + cols.map(c=>c.label).join(",") + "\n";
         students.forEach(st=>{ 
@@ -531,10 +555,10 @@
                   <tr className="bg-amber-50 font-bold sticky top-[37px] z-20 shadow-sm border-b-2">
                     <td className="p-2 sticky left-0 z-30 bg-amber-100 text-center border-r">-</td>
                     <td className="p-2 sticky left-[40px] z-30 bg-amber-50 text-center border-r">-</td>
-                    <td className="p-2 sticky left-[88px] z-30 bg-amber-50 text-center border-r">クラス1日平均</td>
-                    <td className="p-2 text-center border-r bg-amber-50">-</td>
-                    <td className="p-2 text-center border-r bg-amber-50">-</td>
-                    <td className="p-2 text-center border-r bg-amber-50">-</td>
+                    <td className="p-2 sticky left-[88px] z-30 bg-amber-50 text-center border-r">クラス平均</td>
+                    <td className="p-2 text-center border-r text-amber-700 bg-amber-50">{classTargetAvg}</td>
+                    <td className="p-2 text-center border-r text-amber-700 bg-amber-50">{classTotalAvg}</td>
+                    <td className="p-2 text-center border-r text-amber-700 bg-amber-50">{classAvgAvg}</td>
                     {classAvgs.map((avg, i) => <td key={i} className="p-2 text-center border-r text-amber-700 bg-amber-50">{avg}</td>)}
                   </tr>
                   {sorted.map((st, idx)=>{ 
@@ -1055,7 +1079,7 @@
               <div>
                 <h1 className="text-xl font-bold text-blue-700 flex items-center gap-2"><Icon name="Users" size={24} className="text-blue-600"/>中2A クラスノート</h1>
                 <div className="flex items-center gap-2 mt-2">
-                  <span className="text-[10px] font-mono bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded border">v2.0.7</span>
+                  <span className="text-[10px] font-mono bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded border">v2.0.8</span>
                   {isCloudReady ? (saveStatus === 'saving' ? <span className="flex items-center gap-1 text-[10px] text-amber-600 font-bold bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200"><Icon name="Loader2" size={10} className="animate-spin"/> 保存中</span> : <span className="flex items-center gap-1 text-[10px] text-emerald-600 font-bold bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-100">自動同期ON</span>) : <span className="text-[10px] text-slate-400 font-bold bg-slate-50 px-1.5 py-0.5 rounded border">同期OFF</span>}
                 </div>
               </div>
@@ -1096,7 +1120,7 @@
             <div className="md:hidden bg-white border-b p-4 flex items-center justify-between print-hide">
               <div className="flex items-center gap-2"><button onClick={() => setIsMobileMenuOpen(true)} className="p-2 -ml-2 text-slate-600 hover:bg-slate-100 rounded-lg"><Icon name="Menu" size={24}/></button><span className="font-bold">中2A クラスノート</span></div>
               <div className="flex items-center gap-2">
-                <span className="text-[10px] font-mono bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded border border-slate-200">v2.0.7</span>
+                <span className="text-[10px] font-mono bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded border border-slate-200">v2.0.8</span>
                 {isCloudReady && ( saveStatus === 'saving' ? ( <span className="flex items-center gap-1 text-[10px] text-amber-600 font-bold bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200"><Icon name="Loader2" size={10} className="animate-spin" /> 保存中</span> ) : ( <span className="relative flex h-2 w-2"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span><span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span></span> ) )}
               </div>
             </div>
