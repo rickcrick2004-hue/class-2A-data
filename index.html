@@ -56,7 +56,7 @@
       Cloud: '<path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/>',
       CloudUpload: '<path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/><path d="M12 12v9"/><path d="m16 16-4-4-4 4"/>',
       CloudDownload: '<path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/><path d="M12 12v9"/><path d="m8 17 4 4 4-4"/>',
-      Settings: '<path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/>',
+      Settings: '<path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/>',
       ChevronDown: '<polyline points="6 9 12 15 18 9"/>',
       Menu: '<line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/>',
       Loader2: '<path d="M21 12a9 9 0 1 1-6.219-8.56"/>',
@@ -305,11 +305,35 @@
       );
     }
 
-    function GradesView({ grades, setGrades, students, terms, showToast }) {
+    function GradesView({ grades, setGrades, students, terms, showToast, studySchedules }) {
       const [sel, setSel] = useState(terms[0].id); const [s, sort] = useSort('number'); const r = useRef(null);
+      
+      const scheduleData = (studySchedules && studySchedules[sel] && studySchedules[sel].data) ? studySchedules[sel].data : {};
+      
+      const calcStudentStudy = (stId) => {
+        const d = scheduleData[stId] || {};
+        let total = 0; let count = 0;
+        Object.keys(d).forEach(k => {
+           if (k.startsWith('day_')) {
+              const val = parseFloat(d[k]);
+              if (!isNaN(val)) { total += val; count++; }
+           }
+        });
+        return { total: Number(total.toFixed(1)), avg: count > 0 ? Number((total / count).toFixed(1)) : 0 };
+      };
+
       const sorted = [...students].sort((a,b)=>{
         if(s.k==='number') return s.d==='asc'?a.number-b.number:b.number-a.number;
         if(s.k==='name') return s.d==='asc'?a.kana.localeCompare(b.kana,'ja'):b.kana.localeCompare(a.kana,'ja');
+        
+        if (s.k === 'study_total' || s.k === 'study_avg') {
+           const calcA = calcStudentStudy(a.id);
+           const calcB = calcStudentStudy(b.id);
+           const vA = s.k === 'study_total' ? calcA.total : calcA.avg;
+           const vB = s.k === 'study_total' ? calcB.total : calcB.avg;
+           return s.d==='asc'?vA-vB:vB-vA;
+        }
+
         const vA=Number((grades[sel]?.[a.id]||{})[s.k]||-Infinity); const vB=Number((grades[sel]?.[b.id]||{})[s.k]||-Infinity); return s.d==='asc'?vA-vB:vB-vA;
       });
       const dl = () => {
@@ -322,7 +346,7 @@
         lines.forEach(v=>{ const st=students.find(x=>x.number===parseInt(v.split(',')[0])); if(st){ const a=v.split(','); nG[st.id]={kokugo:a[2],shakai:a[3],sugaku:a[4],rika:a[5],eigo:a[6],total:a[7],average:a[8],class_rank:a[9],grade_rank:a[10]}; cnt++; }});
         setGrades(p=>({...p,[sel]:nG})); e.target.value=null; showToast(`${cnt}名読込`);
       });
-      const thC = "p-3 cursor-pointer hover:bg-slate-100 text-center";
+      const thC = "p-3 cursor-pointer hover:bg-slate-100 text-center whitespace-nowrap";
 
       const currentIndex = terms.findIndex(t => t.id === sel);
       const prevTermId = currentIndex > 0 ? terms[currentIndex - 1].id : null;
@@ -340,7 +364,7 @@
       };
 
       return (
-        <div className="max-w-5xl mx-auto">
+        <div className="max-w-6xl mx-auto">
           <div className="flex justify-between mb-4"><h2 className="text-2xl font-bold">定期考査</h2><div className="flex gap-2"><button onClick={dl} className="px-4 py-1.5 bg-white border rounded text-sm font-bold"><Icon name="Download" size={16} className="inline mr-1"/>CSV出力</button><input type="file" className="hidden" ref={r} onChange={ul}/><button onClick={()=>r.current?.click()} className="px-4 py-1.5 bg-blue-50 border-blue-200 text-blue-700 rounded text-sm font-bold"><Icon name="Upload" size={16} className="inline mr-1"/>CSV読込</button></div></div>
           <div className="bg-white p-6 rounded-xl border">
             <div className="mb-4 flex gap-2">{terms.map(t=><button key={t.id} onClick={()=>setSel(t.id)} className={`px-4 py-2 rounded text-sm font-bold ${sel===t.id?'bg-blue-600 text-white':'bg-slate-100'}`}>{t.name}</button>)}</div>
@@ -348,16 +372,21 @@
               <th className="p-3 w-10 sticky left-0 z-20 bg-slate-100 text-center text-slate-400 border-r">#</th>
               <th className="p-3 w-12 sticky left-[40px] z-20 bg-slate-50 text-center cursor-pointer border-r" onClick={()=>sort('number')}>番<SortIcon s={s} k="number"/></th>
               <th className="p-3 w-32 sticky left-[88px] z-20 bg-slate-50 cursor-pointer border-r" onClick={()=>sort('name')}>氏名<SortIcon s={s} k="name"/></th>
+              <th className={`${thC} bg-emerald-50 border-r`} onClick={()=>sort('study_total')}>総勉強<SortIcon s={s} k="study_total"/></th>
+              <th className={`${thC} bg-emerald-50 border-r`} onClick={()=>sort('study_avg')}>1日平均<SortIcon s={s} k="study_avg"/></th>
               {['kokugo','shakai','sugaku','rika','eigo'].map(k=><th key={k} className={thC} onClick={()=>sort(k)}>{k==='kokugo'?'国':k==='shakai'?'社':k==='sugaku'?'数':k==='rika'?'理':'英'}<SortIcon s={s} k={k}/></th>)}
-              <th className={`${thC} bg-blue-50`} onClick={()=>sort('total')}>総点<SortIcon s={s} k="total"/></th><th className={thC} onClick={()=>sort('average')}>平均<SortIcon s={s} k="average"/></th><th className={thC} onClick={()=>sort('class_rank')}>級位<SortIcon s={s} k="class_rank"/></th><th className={thC} onClick={()=>sort('grade_rank')}>年位<SortIcon s={s} k="grade_rank"/></th>
+              <th className={`${thC} bg-blue-50 border-l`} onClick={()=>sort('total')}>総点<SortIcon s={s} k="total"/></th><th className={thC} onClick={()=>sort('average')}>平均<SortIcon s={s} k="average"/></th><th className={thC} onClick={()=>sort('class_rank')}>級位<SortIcon s={s} k="class_rank"/></th><th className={thC} onClick={()=>sort('grade_rank')}>年位<SortIcon s={s} k="grade_rank"/></th>
             </tr></thead><tbody className="divide-y">{sorted.map((st, idx)=>{ 
               const g=grades[sel]?.[st.id]||{}; 
               const prevG = prevTermId ? grades[prevTermId]?.[st.id] : null;
+              const calcStudy = calcStudentStudy(st.id);
               return <tr key={st.id} className="hover:bg-slate-50">
               <td className="p-3 sticky left-0 z-10 bg-slate-50 text-center text-slate-400 font-bold border-r">{idx + 1}</td>
               <td className="p-3 sticky left-[40px] z-10 bg-white text-center border-r">{st.number}</td>
               <td className="p-3 font-bold sticky left-[88px] z-10 bg-white border-r">{st.name}</td>
-              <td className="p-3 text-center">{g.kokugo||'-'}{renderDiff(g.kokugo, prevG?.kokugo)}</td><td className="p-3 text-center">{g.shakai||'-'}{renderDiff(g.shakai, prevG?.shakai)}</td><td className="p-3 text-center">{g.sugaku||'-'}{renderDiff(g.sugaku, prevG?.sugaku)}</td><td className="p-3 text-center">{g.rika||'-'}{renderDiff(g.rika, prevG?.rika)}</td><td className="p-3 text-center">{g.eigo||'-'}{renderDiff(g.eigo, prevG?.eigo)}</td><td className="p-3 text-center font-bold bg-blue-50/50">{g.total||'-'}{renderDiff(g.total, prevG?.total)}</td><td className="p-3 text-center">{g.average||'-'}{renderDiff(g.average, prevG?.average)}</td><td className="p-3 text-center">{g.class_rank||'-'}{renderDiff(g.class_rank, prevG?.class_rank, true)}</td><td className="p-3 text-center">{g.grade_rank||'-'}{renderDiff(g.grade_rank, prevG?.grade_rank, true)}</td></tr> })}</tbody></table></div>
+              <td className="p-3 text-center bg-emerald-50/30 border-r">{calcStudy.total > 0 ? calcStudy.total : '-'}</td>
+              <td className="p-3 text-center bg-emerald-50/30 border-r">{calcStudy.avg > 0 ? calcStudy.avg.toFixed(1) : '-'}</td>
+              <td className="p-3 text-center">{g.kokugo||'-'}{renderDiff(g.kokugo, prevG?.kokugo)}</td><td className="p-3 text-center">{g.shakai||'-'}{renderDiff(g.shakai, prevG?.shakai)}</td><td className="p-3 text-center">{g.sugaku||'-'}{renderDiff(g.sugaku, prevG?.sugaku)}</td><td className="p-3 text-center">{g.rika||'-'}{renderDiff(g.rika, prevG?.rika)}</td><td className="p-3 text-center">{g.eigo||'-'}{renderDiff(g.eigo, prevG?.eigo)}</td><td className="p-3 text-center font-bold bg-blue-50/50 border-l">{g.total||'-'}{renderDiff(g.total, prevG?.total)}</td><td className="p-3 text-center">{g.average||'-'}{renderDiff(g.average, prevG?.average)}</td><td className="p-3 text-center">{g.class_rank||'-'}{renderDiff(g.class_rank, prevG?.class_rank, true)}</td><td className="p-3 text-center">{g.grade_rank||'-'}{renderDiff(g.grade_rank, prevG?.grade_rank, true)}</td></tr> })}</tbody></table></div>
           </div>
         </div>
       );
@@ -1087,7 +1116,7 @@
         return () => window.removeEventListener('afterprint', afterP);
       }, [isPrintingAll, printingIncidentId]);
 
-      // ★修正: ナビゲーションに小テスト・その他成績を追加
+      // ★修正: ナビゲーション
       const navs = [ {id:'dashboard',i:'Target',l:'クラス目標・状況'}, {id:'principles',i:'Heart',l:'クラス指針・心構え'}, {id:'students',i:'Users',l:'生徒一覧・記録'}, {id:'student_details',i:'ClipboardList',l:'生徒詳細情報'}, {id:'grades',i:'FileSpreadsheet',l:'定期考査'}, {id:'mock_grades',i:'LineChart',l:'模試成績'}, {id:'schedules',i:'Clock',l:'スケジュール表'}, {id:'custom_tests',i:'FilePlus',l:'小テスト・その他'}, {id:'events',i:'Calendar',l:'出来事'}, {id:'ideas',i:'Lightbulb',l:'アイデア'}, {id:'todos',i:'CheckSquare',l:'ToDo'}, {id:'incidents',i:'AlertTriangle',l:'生徒対応'} ];
 
       if (printingIncidentId) {
@@ -1117,7 +1146,7 @@
               <div>
                 <h1 className="text-xl font-bold text-blue-700 flex items-center gap-2"><Icon name="Users" size={24} className="text-blue-600"/>中2A クラスノート</h1>
                 <div className="flex items-center gap-2 mt-2">
-                  <span className="text-[10px] font-mono bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded border">v2.0.9</span>
+                  <span className="text-[10px] font-mono bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded border">v2.0.10</span>
                   {isCloudReady ? (saveStatus === 'saving' ? <span className="flex items-center gap-1 text-[10px] text-amber-600 font-bold bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200"><Icon name="Loader2" size={10} className="animate-spin"/> 保存中</span> : <span className="flex items-center gap-1 text-[10px] text-emerald-600 font-bold bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-100">自動同期ON</span>) : <span className="text-[10px] text-slate-400 font-bold bg-slate-50 px-1.5 py-0.5 rounded border">同期OFF</span>}
                 </div>
               </div>
@@ -1158,7 +1187,7 @@
             <div className="md:hidden bg-white border-b p-4 flex items-center justify-between print-hide">
               <div className="flex items-center gap-2"><button onClick={() => setIsMobileMenuOpen(true)} className="p-2 -ml-2 text-slate-600 hover:bg-slate-100 rounded-lg"><Icon name="Menu" size={24}/></button><span className="font-bold">中2A クラスノート</span></div>
               <div className="flex items-center gap-2">
-                <span className="text-[10px] font-mono bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded border border-slate-200">v2.0.9</span>
+                <span className="text-[10px] font-mono bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded border border-slate-200">v2.0.10</span>
                 {isCloudReady && ( saveStatus === 'saving' ? ( <span className="flex items-center gap-1 text-[10px] text-amber-600 font-bold bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200"><Icon name="Loader2" size={10} className="animate-spin" /> 保存中</span> ) : ( <span className="relative flex h-2 w-2"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span><span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span></span> ) )}
               </div>
             </div>
@@ -1191,7 +1220,7 @@
               )}
               {activeTab === 'students' && selectedStudentId && <StudentDetail student={INITIAL_STUDENTS.find(s=>s.id===selectedStudentId)} records={records[selectedStudentId]||[]} studentGrades={TEST_TERMS.reduce((a,t)=>({...a,[t.id]:grades[t.id]?.[selectedStudentId]||null}),{})} studentMockGrades={MOCK_EXAMS.reduce((a,m)=>({...a,[m.id]:mockGrades[m.id]?.[selectedStudentId]||null}),{})} details={studentDetails[selectedStudentId]||{}} onUpdateDetails={d=>{setStudentDetails(p=>({...p,[selectedStudentId]:d}));showToast("更新しました");}} onSaveRecord={(r,id)=>{setRecords(p=>({...p,[selectedStudentId]:(id?(p[selectedStudentId]||[]).map(x=>x.id===id?{...r,id}:x):[{...r,id:Date.now()},...(Array.isArray(p[selectedStudentId])?p[selectedStudentId]:[])]).sort((a,b)=>new Date(b.date)-new Date(a.date))}));showToast("保存完了");}} onDeleteRecord={id=>confirmDialog("削除しますか？", () => {setRecords(p=>({...p,[selectedStudentId]:(Array.isArray(p[selectedStudentId])?p[selectedStudentId]:[]).filter(x=>x.id!==id)}));showToast("削除済");})} onBack={()=>setSelectedStudentId(null)} isPrint={false} confirmDialog={confirmDialog} />}
               {activeTab === 'student_details' && <StudentDetailsView details={studentDetails} setDetails={setStudentDetails} students={INITIAL_STUDENTS} showToast={showToast} />}
-              {activeTab === 'grades' && <GradesView grades={grades} setGrades={setGrades} students={INITIAL_STUDENTS} terms={TEST_TERMS} showToast={showToast} />}
+              {activeTab === 'grades' && <GradesView grades={grades} setGrades={setGrades} students={INITIAL_STUDENTS} terms={TEST_TERMS} showToast={showToast} studySchedules={studySchedules} />}
               {activeTab === 'mock_grades' && <MockGradesView mockGrades={mockGrades} setMockGrades={setMockGrades} students={INITIAL_STUDENTS} mocks={MOCK_EXAMS} showToast={showToast} />}
               {activeTab === 'schedules' && <StudySchedulesView schedules={studySchedules} setSchedules={setStudySchedules} students={INITIAL_STUDENTS} terms={TEST_TERMS} showToast={showToast} />}
               {activeTab === 'custom_tests' && <CustomTestsView customTests={customTests} setCustomTests={setCustomTests} students={INITIAL_STUDENTS} showToast={showToast} confirmDialog={confirmDialog} />}
